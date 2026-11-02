@@ -402,7 +402,7 @@
   }
 
   function close() { if (root) root.style.display = "none"; document.body.style.overflow = ""; }
-  function open() {
+  function open(after) {
     hooks.ensureAuth(async () => {
       if (!root) { root = build(); document.body.appendChild(root); }
       root.style.display = "";
@@ -413,11 +413,12 @@
       if (!cfg.enabled) { $(".cai-body").innerHTML = `<div class="cai-empty">${esc(cfg.error || "服务器还没有配置 AI。在 .env 里设置 AI_PROVIDER / AI_API_KEY（见 README「AI 顾问」）后重启。")}</div>`; return; }
       render();
       loadPending();
+      if (typeof after === "function") after();
     });
   }
   // 页面加载时问一次服务端是否启用了 AI, 用来决定显示不显示入口按钮
   async function available() {
     try { const r = await api("/api/ai/config"); if (!r.ok) return false; cfg = await r.json(); return !!cfg.enabled; } catch (e) { return false; }
   }
-  window.CalmAI = { init(h) { hooks = { ...hooks, ...h }; }, open, close, available };
+  window.CalmAI = { init(h) { hooks = { ...hooks, ...h }; }, open: () => open(), close, available, draft: () => open(() => startOnboard()) };
 })();

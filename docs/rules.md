@@ -6,7 +6,7 @@
 cp plan.example.json data/plan.json
 ```
 
-改完保存即可生效，不用重启。不想手写的话，也可以用 AI 顾问的「起草规则」（见 [ai.md](ai.md)），或者在添加 / 修改持仓时直接在页面上设（见 [features.md](features.md#在页面上设规则)）。
+改完保存即可生效，不用重启。还没写规则（没有 `data/plan.json`）时，所有持仓默认「封仓」，纪律页只显示占比。不想手写的话，也可以用 AI 顾问的「起草规则」（见 [ai.md](ai.md)），或者在添加 / 修改持仓时直接在页面上设（见 [features.md](features.md#在页面上设规则)）。
 
 ## 常用字段
 

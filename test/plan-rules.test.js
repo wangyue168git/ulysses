@@ -23,7 +23,8 @@ test("单只标的规则: 需登录; 校验参数; 写入 data/plan.json 并能�
   const planPath = path.join(server.dir, "plan.json");
   const saved = JSON.parse(fs.readFileSync(planPath, "utf8"));
   assert.deepEqual(saved.channels.symbols.MSFT, { type: "band", openBelowPct: 8, sealAtPct: 10, targetShares: 20, why: "测试" });
-  assert.ok(saved.channels.indexPlan, "首次写入以示例规则为底, 其他字段保留");
+  assert.equal(saved.channels.indexPlan, undefined, "还没写规则时以空规则为底, 不会带上示例里的定投");
+  assert.equal(saved._empty, undefined);
 
   const plan = await request(server.baseUrl, "/plan.json", { token });
   assert.equal(plan.json.channels.symbols.MSFT.targetShares, 20);

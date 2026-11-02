@@ -455,10 +455,10 @@ async function getExchangeRate() {
 
 // ---- 个人规则(plan.json) ----
 const PLAN_FILE = path.join(DATA_DIR, "plan.json");
-const PLAN_EXAMPLE_FILE = path.join(__dirname, "plan.example.json");
 const READ_APIS = new Set(["/plan.json", "/api/portfolio", "/api/history", "/api/data", "/api/journal", "/api/ib-sync", "/api/broker-sync"]);
 let _planCache = { mtime: -1, file: "", doc: {} };
 function savePlan(plan) {
+  if (plan && plan._empty) { plan = { ...plan }; delete plan._empty; }   // 空规则第一次写入后就是真正的规则了
   try {
     const tmp = PLAN_FILE + ".tmp";
     fs.writeFileSync(tmp, JSON.stringify(plan, null, 1) + "\n");
@@ -466,8 +466,15 @@ function savePlan(plan) {
     return true;
   } catch (e) { console.error("plan.json 写入失败:", e.message); return false; }
 }
+// 还没写规则(没有 data/plan.json)时用空规则: 所有持仓默认封仓, 纪律页只显示占比, 页面会提示去写规则。
+// (以前会直接拿 plan.example.json 当规则, 新用户什么都没做就出现了示例里的定投和个股规则)
+const EMPTY_PLAN = Object.freeze({ _empty: true, channels: { labels: { open: "可加", seal: "封仓" }, default: "seal", symbols: {} }, changelog: [] });
 function loadPlan() {
-  const file = fs.existsSync(PLAN_FILE) ? PLAN_FILE : PLAN_EXAMPLE_FILE;
+  if (!fs.existsSync(PLAN_FILE)) {
+    if (_planCache.file !== null) { _planCache = { mtime: 0, file: null, doc: JSON.parse(JSON.stringify(EMPTY_PLAN)) }; configureGroups(undefined); }
+    return _planCache.doc;
+  }
+  const file = PLAN_FILE;
   try {
     const mtime = fs.statSync(file).mtimeMs;
     if (_planCache.file !== file || _planCache.mtime !== mtime) {
@@ -1307,6 +1314,7 @@ const PUBLIC_STATIC_FILES = {
   "/classify.js": ["classify.js", "application/javascript; charset=utf-8"],
   "/csv-import.js": ["csv-import.js", "application/javascript; charset=utf-8"],
   "/ai-panel.js": ["ai-panel.js", "application/javascript; charset=utf-8"],
+  "/onboard.js": ["onboard.js", "application/javascript; charset=utf-8"],
   "/sw.js": ["sw.js", "application/javascript; charset=utf-8"],
   "/manifest.json": ["manifest.json", "application/manifest+json; charset=utf-8"],
   "/favicon.ico": ["favicon.ico", "image/x-icon"],

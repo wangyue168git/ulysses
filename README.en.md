@@ -45,7 +45,7 @@ docker compose up -d
 docker compose logs         # without APP_PASSWORD, the generated first-run password is printed here
 ```
 
-Open `http://<your-server>:3457` and log in. On a phone, "Add to Home Screen" turns it into an app.
+Open `http://<your-server>:3457` and log in. A "Getting started" card walks you through adding holdings, writing your buying rules and installing it on your phone's home screen.
 
 Or run it directly with Node.js 18+, starting with demo data:
 

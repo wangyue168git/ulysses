@@ -14,10 +14,11 @@
 <meta name="apple-mobile-web-app-title" content="尤利西斯">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><!-- iOS26: default 模式下 env(safe-area-inset-top) 恒为0, translucent 才如实上报 -->
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="stylesheet" href="/tailwind.css?v=10">
+<link rel="stylesheet" href="/tailwind.css?v=11">
 <script src="/chart.umd.min.js"></script>
 <script src="/classify.js?v=18"></script>
-<script src="/ai-panel.js?v=6"></script>
+<script src="/ai-panel.js?v=7"></script>
+<script src="/onboard.js?v=1"></script>
 <style>
     :root {
         color-scheme: light;
@@ -243,6 +244,7 @@
         </div>
     </div>
 
+    <div id="onboardCard"></div>
     <!-- 总额 + 收益 -->
     <div class="pt-1 pb-3">
         <div id="totalBig" onclick="toggleCur()" style="cursor:pointer" title="点击切换 ¥ / $" class="text-[44px] leading-none font-black num blur-amt">¥ --</div>
@@ -2100,11 +2102,23 @@ CalmAI.init({
     getAccounts: () => (state && state.accounts) || [],
     onPortfolioChanged: () => setTimeout(manualRefresh, 800),   // 服务端写完也会经 WS 推送, 这里再拉一次兜底
 });
-let _aiChecked = false;
+let _aiChecked = false, _aiEnabled = false;
 function checkAiEntry(){
     if (_aiChecked || !authToken) return;
-    CalmAI.available().then(ok => { _aiChecked = true; document.getElementById('aiBtn').classList.toggle('hidden', !ok); });
+    CalmAI.available().then(ok => { _aiChecked = true; _aiEnabled = ok; document.getElementById('aiBtn').classList.toggle('hidden', !ok); });
 }
+// 新手引导卡片(总览页顶部): 录入持仓 / 写规则 / 装到桌面, 都做完或点「不再提示」后消失
+function renderOnboardM(){
+    if (!window.CalmOnboard || !state || !planDoc) return;
+    CalmOnboard.render(document.getElementById('onboardCard'), {
+        mobile: true,
+        hasHoldings: (state.accounts || []).some(a => (a.holdings || []).length),
+        hasRules: !planDoc._empty,
+        aiEnabled: _aiEnabled,
+        actions: { addHolding: () => { switchPage('holdings'); showAdd(); }, aiDraft: () => CalmAI.draft() },
+    });
+}
+setInterval(renderOnboardM, 1500);
 setInterval(checkAiEntry, 3000);   // 登录后几秒内显示入口; 查到结果后不再请求
 function loadIbSync(){
     checkAiEntry();
@@ -2324,6 +2338,7 @@ function renderDisciplineM(){
             <span class="num">${stockCapSet ? `<b class="${stOk ? '' : 'dc-warn'}">${stPct.toFixed(1)}%</b> <span class="text-gray-400">/ ≤${stockCap}</span> ${mark(stOk)}` : `<b>${stPct.toFixed(1)}%</b>`}</span>
         </div>`;
     document.getElementById('mDcAlloc').innerHTML =
+        (planDoc._empty ? `<div class="text-[12px] text-gray-400 px-1 mb-2">还没写规则：所有持仓默认「封仓」，结构只显示占比。可以在总览页的「开始使用」里写规则。</div>` : '') +
         `<div class="dc-sec">结构</div>` + structRows + offRow + spRow +
         (tgtRows ? `<div class="dc-sec">个股目标</div>` + tgtRows : '');
 

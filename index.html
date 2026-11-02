@@ -12,11 +12,12 @@
     <script>/* 防主题闪烁: CSS加载前先定class */(function(){var m=localStorage.getItem('themeMode')||'auto';if(m==='dark'||(m==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');})();</script>
     <!-- 本地化静态资源(原 cdn.tailwindcss.com 运行时 + jsdelivr chart.js): 摆脱 CDN 抖动,与 m.html 共用同一份 -->
     <!-- tailwind.css 重建: npx tailwindcss@3 -c tailwind.config.js -i tailwind.input.css -o tailwind.css --minify -->
-    <link rel="stylesheet" href="/tailwind.css?v=10"><!-- 改 tailwind.css 时三处版本号同步: index.html / m.html / sw.js -->
+    <link rel="stylesheet" href="/tailwind.css?v=11"><!-- 改 tailwind.css 时三处版本号同步: index.html / m.html / sw.js -->
     <script src="/chart.umd.min.js"></script>
     <script src="/classify.js?v=18"></script><!-- 改 classify.js 时三处版本号同步: index.html / m.html / sw.js -->
     <script src="/csv-import.js?v=1"></script>
-    <script src="/ai-panel.js?v=6"></script>
+    <script src="/ai-panel.js?v=7"></script>
+    <script src="/onboard.js?v=1"></script>
     <style>
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
@@ -360,6 +361,7 @@
             </div>
         </header>
 
+        <div id="onboardCard" class="max-w-2xl"></div>
         <!-- 概览卡片 -->
         <div id="overviewGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 m-page-1" style="--mo:1">
             <div class="glass-card p-5 rounded-2xl shadow-sm">
@@ -600,7 +602,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs text-slate-500 mb-1 uppercase tracking-wide">持仓数量</label>
-                        <input id="fShares" oninput="syncRuleTarget()" type="number" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="100">
+                        <input id="fShares" oninput="syncRuleTarget()" type="number" step="any" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="100">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-500 mb-1 uppercase tracking-wide">成本价</label>
@@ -1420,7 +1422,7 @@ function renderDiscipline(data) {
     row.className = `grid grid-cols-1 ${tiles.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 mb-5`;
     setHtmlIfChanged(row, tiles.join(''));
     document.getElementById('dcAllocBars').innerHTML = '';
-    document.getElementById('dcFootnote').textContent = '';
+    document.getElementById('dcFootnote').textContent = planDoc._empty ? '还没写规则：所有持仓默认「封仓」，结构只显示占比。可以在上方的「开始使用」里写规则。' : '';
 
     // ④ 体检: 只列需要人看的条目
     renderDcAnalysis(data, mulOf, { idxPct, idxTarget, stkPct: stPct, stockCap, singleCap, fmt, gSym, gPct, gTag, ch });
@@ -2173,6 +2175,11 @@ function showAddHolding() {
                 sel.innerHTML += `<option value="${i}">${esc(acc.name)}</option>`;
             });
         }
+        // 还没有账户(或想放进新币种的账户)时, 直接选「新建」, 提交时自动建好, 不用先去「+ 账户」
+        // 已有同币种账户的就不再提供(想再开一个同币种账户, 用「+ 账户」自己起名)
+        const have = new Set(((portfolioData && portfolioData.accounts) || []).map(a => a.currency || 'CNY'));
+        sel.innerHTML += [['USD', '美股账户'], ['CNY', 'A股账户'], ['HKD', '港股账户']].filter(([c]) => !have.has(c))
+            .map(([c, n]) => `<option value="new:${c}:${n}">＋ 新建「${n}」（${c}）</option>`).join('');
         fillRuleForm('add', '');
         const modal = document.getElementById('addHoldingModal');
         modal.style.display = '';
@@ -2267,11 +2274,23 @@ CalmAI.init({
     getAccounts: () => (portfolioData && portfolioData.accounts) || [],
     onPortfolioChanged: () => refreshPortfolioData(),
 });
-let _aiChecked = false;
+let _aiChecked = false, _aiEnabled = false;
 function checkAiEntry() {
     if (_aiChecked || !authToken) return;
-    CalmAI.available().then(ok => { _aiChecked = true; document.getElementById('aiBtn').classList.toggle('hidden', !ok); });
+    CalmAI.available().then(ok => { _aiChecked = true; _aiEnabled = ok; document.getElementById('aiBtn').classList.toggle('hidden', !ok); });
 }
+// 新手引导卡片: 录入持仓 / 写规则, 都做完或点「不再提示」后消失
+function renderOnboardD() {
+    if (!window.CalmOnboard || !portfolioData || !planDoc) return;
+    CalmOnboard.render(document.getElementById('onboardCard'), {
+        mobile: false,
+        hasHoldings: (portfolioData.accounts || []).some(a => (a.holdings || []).length),
+        hasRules: !planDoc._empty,
+        aiEnabled: _aiEnabled,
+        actions: { addHolding: () => showAddHolding(), importCsv: () => showImportCsv(), aiDraft: () => CalmAI.draft() },
+    });
+}
+setInterval(renderOnboardD, 1500);
 setInterval(checkAiEntry, 3000); checkAiEntry();
 
 function showAddAccount() {
@@ -2380,13 +2399,25 @@ document.querySelectorAll('#addHoldingModal,#addAccountModal,#editHoldingModal,#
 });
 
 async function submitHolding() {
+    const accVal = document.getElementById('fAccount').value;
+    if (accVal.startsWith('new:')) {
+        const [, currency, name] = accVal.split(':');
+        const r = await fetch('/api/account', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Auth-Token': authToken }, body: JSON.stringify({ name, currency }) });
+        if (r.status === 401) { authToken = ''; localStorage.removeItem('authToken'); alert('认证已过期，请重新操作'); closeModals(); return; }
+        if (!r.ok) { alert('新建账户失败'); return; }
+        const pf = await (await fetch('/api/portfolio', { headers: { 'X-Auth-Token': authToken } })).json();
+        const idx = (pf.accounts || []).map(a => a.name).lastIndexOf(name);
+        const sel = document.getElementById('fAccount');
+        sel.insertAdjacentHTML('afterbegin', `<option value="${idx}">${esc(name)}</option>`); sel.value = String(idx);
+        if (portfolioData) portfolioData.accounts = pf.accounts;
+    }
     const data = {
         accountIndex: parseInt(document.getElementById('fAccount').value),
         holding: {
             symbol: document.getElementById('fSymbol').value.trim().toUpperCase(),
             market: document.getElementById('fMarket').value,
             name: document.getElementById('fName').value.trim(),
-            shares: parseInt(document.getElementById('fShares').value) || 0,
+            shares: parseFloat(document.getElementById('fShares').value) || 0,   // 支持零碎股/加密货币的小数
             costPrice: parseFloat(document.getElementById('fCost').value) || 0
         }
     };
