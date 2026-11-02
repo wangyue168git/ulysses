@@ -54,6 +54,8 @@ npm ci
 DEMO=1 node server.js
 ```
 
+演示模式下，没配模型也能试用 **AI 顾问体验版**：体检、起草规则、截图导入都能点，回答是预置的，数字来自演示持仓。
+
 也可以一键部署到云平台：
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/wangyue168git/ulysses)

@@ -668,7 +668,8 @@ const otherBrokerSyncs = buildBrokerSyncs({
 const brokerSyncs = [ibSync, ...otherBrokerSyncs].filter((s) => s.configured);
 
 // ---- AI 顾问(可选): 不配置 AI_PROVIDER 就没有入口, 行为与之前完全一致 ----
-const AI = aiConfigFromEnv(process.env);
+// 演示模式(DEMO=1)且没配真实模型时, 自动打开 AI 顾问体验版(预置回答, 不调用任何模型)
+const AI = aiConfigFromEnv(process.env.DEMO === "1" && !process.env.AI_PROVIDER ? { ...process.env, AI_PROVIDER: "demo" } : process.env);
 const AI_COOLDOWN_HOURS = Math.max(0, Math.min(24 * 30, Number(process.env.AI_COOLDOWN_HOURS) || 0));
 const AI_ANONYMIZE_DEFAULT = process.env.AI_SEND_AMOUNTS !== "1";   // 默认只发比例
 const aiPending = createPendingStore(path.join(DATA_DIR, "ai-pending.json"));
@@ -1510,7 +1511,7 @@ const server = http.createServer((req, res) => {
     const currentData = () => latestData || loadPortfolio();
 
     if (urlObj.pathname === "/api/ai/config" && req.method === "GET") {
-      sendJson(200, { enabled: AI.enabled, provider: AI.enabled ? AI.provider : null, model: AI.enabled ? AI.model : null, anonymizeDefault: AI_ANONYMIZE_DEFAULT, cooldownHours: AI_COOLDOWN_HOURS, checkupPrompt: CHECKUP_PROMPT, onboardPrompt: ONBOARD_START, vision: AI.enabled ? (AI.visionModel || AI.model) : null });
+      sendJson(200, { enabled: AI.enabled, provider: AI.enabled ? AI.provider : null, model: AI.enabled ? AI.model : null, anonymizeDefault: AI_ANONYMIZE_DEFAULT, cooldownHours: AI_COOLDOWN_HOURS, checkupPrompt: CHECKUP_PROMPT, onboardPrompt: ONBOARD_START, demo: AI.enabled && AI.provider === "demo", vision: AI.enabled ? (AI.visionModel || AI.model) : null });
       return;
     }
     if (!AI.enabled) { sendJson(404, { ok: false, error: "未配置 AI(见 .env 的 AI_PROVIDER)" }); return; }
@@ -1592,7 +1593,7 @@ const server = http.createServer((req, res) => {
         if (!images.length) { sendJson(400, { ok: false, error: "请选择 1–4 张截图" }); return; }
         const ac = new AbortController();
         res.on("close", () => { if (!res.writableEnded) ac.abort(); });
-        try { sendJson(200, { ok: true, rows: await extractHoldings(AI, images, { signal: ac.signal }) }); }
+        try { sendJson(200, { ok: true, rows: await extractHoldings(AI, images, { signal: ac.signal, demoRows: AI.provider === "demo" ? require("./ai/demo").demoVisionRows(currentData()) : undefined }) }); }
         catch (e) { console.error("[ai] 截图识别出错:", e && e.message); sendJson(502, { ok: false, error: publicError(e) }); }
       });
       return;

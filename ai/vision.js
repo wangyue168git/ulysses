@@ -24,7 +24,8 @@ function parseRows(text) {
 
 const { withTimeout, TIMEOUT_MS } = require("./timeout");
 // images: [{ mediaType: "image/jpeg", data: "<base64>" }]
-async function extractHoldings(cfg0, images, { signal } = {}) {
+async function extractHoldings(cfg0, images, { signal, demoRows } = {}) {
+  if (cfg0.provider === "demo") return demoRows || [];   // 体验版: 不看图, 用按现有持仓编的结果
   const other = !!(cfg0.visionProvider || cfg0.visionBaseUrl);
   // 视觉模型在另一家平台时必须单独配 Key, 不能把主模型的 Key 发给别家
   if (other && !cfg0.visionApiKey && (cfg0.visionProvider || cfg0.provider) !== "mock") throw new Error("视觉模型在另一家平台, 请设置 AI_VISION_API_KEY");

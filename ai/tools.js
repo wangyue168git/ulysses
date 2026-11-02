@@ -162,6 +162,7 @@ function createToolset(deps, { allowPropose = true } = {}) {
   return {
     defs,
     proposals,
+    deps,   // 体验版要直接读当前持仓和规则
     label(name, args) { const d = DEFS.find((x) => x.name === name); return d ? d.label(args || {}) : name; },
     // 返回 { content, isError }; 任何异常都变成错误结果交还给模型, 不中断对话
     run(name, args) {

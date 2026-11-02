@@ -91,6 +91,8 @@
 .cai-tbl td{padding:3px}.cai-tbl input{width:100%;box-sizing:border-box;border:1px solid var(--line);background:var(--soft);color:var(--fg);border-radius:8px;padding:5px 6px;font-size:13px}
 .cai-tbl input.bad{border-color:var(--warn)}.cai-tag{font-size:11px;padding:1px 6px;border-radius:6px;background:var(--soft);white-space:nowrap}
 .cai-tag.new{color:var(--acc2)}.cai-tag.update{color:#6366f1}.cai-tag.missing{color:var(--warn)}
+.cai-demo{margin:8px 18px 0;padding:7px 12px;border-radius:12px;background:#fef3c7;color:#92400e;font-size:12px}
+.cai.dark .cai-demo{background:#3b2f13;color:#fcd34d}
 .cai-dots::after{content:"…";animation:caiDot 1s steps(3,end) infinite}@keyframes caiDot{0%{content:"."}50%{content:".."}100%{content:"..."}}`;
     document.head.appendChild(st);
   }
@@ -111,6 +113,7 @@
         <input type="file" accept="image/*" multiple hidden data-file>
       </div>
       <div class="cai-modebar"><span>正在起草规则：回答几个问题，最后给出完整草案，逐条确认</span><button class="cai-x" data-act="endonboard">结束</button></div>
+      <div class="cai-demo" hidden>体验版：回答是预置的，没有调用任何模型；数字来自当前持仓，建议可以真实确认。配置真实模型见文档 docs/ai.md。</div>
       <div class="cai-pendbox"></div>
       <div class="cai-body"></div>
       <div class="cai-ft">
@@ -160,6 +163,7 @@
     const dark = document.body.classList.contains("dark") || document.documentElement.classList.contains("dark");
     $(".cai").classList.toggle("dark", dark);
     $(".cai-model").textContent = cfg && cfg.model ? cfg.model : "";
+    $(".cai-demo").hidden = !(cfg && cfg.demo);
     $("[data-act=anon]").checked = anon();
     $(".cai-modebar").classList.toggle("on", mode === "onboard" && view === "chat");
     $(".cai-ft").style.display = view === "chat" ? "" : "none";

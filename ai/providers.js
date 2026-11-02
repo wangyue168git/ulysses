@@ -8,11 +8,11 @@ const DEFAULT_MODELS = { anthropic: "claude-opus-5-5", openai: "gpt-4o-mini" };
 
 function aiConfigFromEnv(env = process.env) {
   const provider = String(env.AI_PROVIDER || "").trim().toLowerCase();
-  const ok = provider === "anthropic" || provider === "openai" || (provider === "mock" && env.NODE_ENV === "test");
+  const ok = provider === "anthropic" || provider === "openai" || provider === "demo" || (provider === "mock" && env.NODE_ENV === "test");
   const model = String(env.AI_MODEL || DEFAULT_MODELS[provider] || "mock").trim();
   return {
-    enabled: ok && (provider === "mock" || !!env.AI_API_KEY || (provider === "openai" && !!env.AI_BASE_URL)),
-    provider, model,
+    enabled: ok && (provider === "mock" || provider === "demo" || !!env.AI_API_KEY || (provider === "openai" && !!env.AI_BASE_URL)),
+    provider, model: provider === "demo" ? "体验版" : model,
     apiKey: env.AI_API_KEY || "",
     baseUrl: String(env.AI_BASE_URL || "").replace(/\/+$/, ""),
     // Claude 的思考深度; 默认模型用 medium(分析持仓够用、更省), 其它 Claude 模型不填就用模型自己的默认

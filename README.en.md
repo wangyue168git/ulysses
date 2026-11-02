@@ -54,6 +54,8 @@ npm ci
 DEMO=1 node server.js
 ```
 
+In demo mode the **AI advisor demo** works without any model or API key: check-up, rule drafting and screenshot import are all clickable, with pre-written answers based on the demo holdings.
+
 Or deploy to a cloud platform in one click:
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/wangyue168git/ulysses)

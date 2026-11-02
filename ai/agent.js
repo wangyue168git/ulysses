@@ -148,6 +148,7 @@ function runAgent(cfg, args) {
   if (cfg.provider === "anthropic") return anthropicLoop(cfg, args);
   if (cfg.provider === "openai") return openaiLoop(cfg, args);
   if (cfg.provider === "mock") return mockLoop(cfg, args);
+  if (cfg.provider === "demo") return require("./demo").demoLoop(cfg, args);
   return Promise.reject(new Error("未配置 AI_PROVIDER"));
 }
 
