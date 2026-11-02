@@ -90,6 +90,11 @@ if (process.env.DEMO === "1" && !fs.existsSync(PORTFOLIO_FILE)) {
   try { fs.copyFileSync(path.join(__dirname, "examples", "portfolio.example.json"), PORTFOLIO_FILE); console.log("[ulysses] 演示模式: 已载入示例持仓"); }
   catch (e) { console.error("示例持仓载入失败:", e.message); }
 }
+// 演示模式也载入一份「用到全部功能」的演示规则(新手示例 plan.example.json 只保留常用的)
+if (process.env.DEMO === "1" && !fs.existsSync(path.join(DATA_DIR, "plan.json"))) {
+  try { fs.copyFileSync(path.join(__dirname, "examples", "plan.demo.json"), path.join(DATA_DIR, "plan.json")); console.log("[ulysses] 演示模式: 已载入演示规则"); }
+  catch (e) { console.error("演示规则载入失败:", e.message); }
+}
 const HISTORY_FILE = path.join(DATA_DIR, "history.json");
 const HISTORY_JOURNAL_FILE = path.join(DATA_DIR, "history.journal");
 const PROCESS_STARTED_AT = Date.now();

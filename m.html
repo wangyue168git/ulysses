@@ -2195,7 +2195,9 @@ function renderDisciplineM(){
         </div>`).join('') : '';
     // 方案 1: 本月定投当大数字领头, 下方一条细进度线(与首页大数字同语法)
     const doneTag = done ? `<span class="ch-tag open" style="font-size:11px;padding:4px 7px">✓ 完成</span>` : `<span class="text-[12px] font-bold text-gray-400 num">差 ¥${fmt0(Math.max(0, passCNY - monthCNY))} 达标</span>`;
-    document.getElementById('mDcExec').innerHTML = `
+    const hasIndexPlan = !!(planDoc.channels && planDoc.channels.indexPlan && Array.isArray(planDoc.channels.indexPlan.symbols) && planDoc.channels.indexPlan.symbols.length);
+    // 没写定投计划就不显示定投这一块(在途申购照常显示)
+    document.getElementById('mDcExec').innerHTML = !hasIndexPlan ? dcaRows : `
         <div style="padding:2px 4px 0">
             <div class="text-[12px] font-bold text-gray-400">${now.getMonth() + 1} 月定投 · ${idxSyms.join('/')}</div>
             <div class="flex items-end" style="gap:10px;margin-top:2px;flex-wrap:wrap">
@@ -2209,8 +2211,11 @@ function renderDisciplineM(){
 
     // ② 结构: 指数/个股占比行 + 个股目标(股数进度 + 占比上限)
     const ta = planDoc.targetAllocation || {};
+    const chD = planDoc.channels || {};
+    const idxTargetSet = ta.indexTargetPct != null || ta.indexTarget != null;
+    const stockCapSet = ta.stockCapPct != null || (ta.targets && ta.targets['个股'] != null) || chD.stockBucketCapPct != null;
     const idxTarget = ta.indexTargetPct || ta.indexTarget || 60;
-    const stockCap = ta.stockCapPct || (ta.targets && ta.targets['个股']) || 40;
+    const stockCap = ta.stockCapPct || (ta.targets && ta.targets['个股']) || chD.stockBucketCapPct || 40;
     const singleCap = ta.singleCapPct || 10;
     const sums = { '纳指': 0, '标普': 0, '个股': 0, '其他': 0 };
     let tot = 0;
@@ -2312,11 +2317,11 @@ function renderDisciplineM(){
     const structRows = `
         <div class="dc-row bg-white flex items-center justify-between">
             <span class="flex items-center" style="gap:10px"><span class="dc-dot" style="background:#6366f1"></span><b>指数</b> <span class="text-[11px] text-gray-400 num">纳指 ${naPct.toFixed(1)} + 标普 ${spPct.toFixed(1)}</span></span>
-            <span class="num"><b class="${idxOk ? '' : 'dc-warn'}">${idxPct.toFixed(1)}%</b> <span class="text-gray-400">/ ≥${idxTarget}</span> ${mark(idxOk)}</span>
+            <span class="num">${idxTargetSet ? `<b class="${idxOk ? '' : 'dc-warn'}">${idxPct.toFixed(1)}%</b> <span class="text-gray-400">/ ≥${idxTarget}</span> ${mark(idxOk)}` : `<b>${idxPct.toFixed(1)}%</b>`}</span>
         </div>
         <div class="dc-row bg-white flex items-center justify-between">
             <span class="flex items-center" style="gap:10px"><span class="dc-dot" style="background:#f59e0b"></span><b>个股</b></span>
-            <span class="num"><b class="${stOk ? '' : 'dc-warn'}">${stPct.toFixed(1)}%</b> <span class="text-gray-400">/ ≤${stockCap}</span> ${mark(stOk)}</span>
+            <span class="num">${stockCapSet ? `<b class="${stOk ? '' : 'dc-warn'}">${stPct.toFixed(1)}%</b> <span class="text-gray-400">/ ≤${stockCap}</span> ${mark(stOk)}` : `<b>${stPct.toFixed(1)}%</b>`}</span>
         </div>`;
     document.getElementById('mDcAlloc').innerHTML =
         `<div class="dc-sec">结构</div>` + structRows + offRow + spRow +

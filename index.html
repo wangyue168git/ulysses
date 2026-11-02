@@ -1260,8 +1260,13 @@ function renderDiscipline(data) {
     const mulOf = c => c === 'USD' ? rate : c === 'HKD' ? rate / 7.8 : 1;
     const fmt = n => Math.round(n).toLocaleString('zh-CN');
     const ta = planDoc.targetAllocation || {};
+    // 每一块都是「配了才显示」: 没写结构目标就只显示占比, 没写定投计划就不显示定投
+    const idxTargetSet = ta.indexTargetPct != null || ta.indexTarget != null;
+    const ch0 = planDoc.channels || {};
+    const stockCapSet = ta.stockCapPct != null || (ta.targets && ta.targets['个股'] != null) || ch0.stockBucketCapPct != null;
+    const hasIndexPlan = !!(ch0.indexPlan && Array.isArray(ch0.indexPlan.symbols) && ch0.indexPlan.symbols.length);
     const idxTarget = ta.indexTargetPct || ta.indexTarget || 60;
-    const stockCap = ta.stockCapPct || (ta.targets && ta.targets['个股']) || 40;
+    const stockCap = ta.stockCapPct || (ta.targets && ta.targets['个股']) || ch0.stockBucketCapPct || 40;
     const singleCap = ta.singleCapPct || 10;
     const ch = planDoc.channels || {};
     document.getElementById('dcLockdown').textContent = '';
@@ -1370,12 +1375,12 @@ function renderDiscipline(data) {
             </div>`;
     }
     const tileS = `<div class="bg-slate-50 rounded-xl p-4">
-        <div class="text-[13px] font-semibold text-slate-600">结构 · 指数 ≥${idxTarget} / 个股 ≤${stockCap}</div>
+        <div class="text-[13px] font-semibold text-slate-600">结构${idxTargetSet || stockCapSet ? ' · ' + [idxTargetSet ? `指数 ≥${idxTarget}` : '', stockCapSet ? `个股 ≤${stockCap}` : ''].filter(Boolean).join(' / ') : ''}</div>
         <div class="relative mt-3" style="height:14px;border-radius:7px;background:#e2e8f0;overflow:hidden;display:flex">
             <div style="width:${naPct}%;background:#6366f1"></div><div style="width:${spPct}%;background:#10b981"></div><div style="width:${stPct}%;background:#f59e0b"></div><div style="width:${otPct}%;background:#94a3b8"></div>
         </div>
         <div class="relative tabular-nums" style="height:16px;margin-top:4px;font-size:9px;color:#94a3b8">
-            <span style="position:absolute;left:${idxTarget}%;transform:translateX(-50%);white-space:nowrap"><span style="display:block;width:1px;height:6px;background:#94a3b8;margin:0 auto 2px"></span>${idxTarget}</span>
+            ${idxTargetSet ? `<span style="position:absolute;left:${idxTarget}%;transform:translateX(-50%);white-space:nowrap"><span style="display:block;width:1px;height:6px;background:#94a3b8;margin:0 auto 2px"></span>${idxTarget}</span>` : ''}
         </div>
         <div class="flex flex-wrap text-[11px] text-slate-500 tabular-nums" style="gap:10px;margin-top:2px">
             <span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#6366f1;margin-right:4px;vertical-align:-0.5px"></i>纳指 ${naPct.toFixed(1)}</span>
@@ -1410,7 +1415,10 @@ function renderDiscipline(data) {
         <div class="flex justify-between text-[11px] text-slate-400 tabular-nums"><span class="mask-amount">${fm(I.pnl)}</span><span class="text-slate-500 font-bold">${verdict}</span><span class="mask-amount">${fm(S.pnl)}</span></div>
     </div>`;
 
-    setHtmlIfChanged(document.getElementById('dcExecRow'), tileQ + tileS + tileR);
+    const tiles = [hasIndexPlan ? tileQ : '', tileS, tileR].filter(Boolean);
+    const row = document.getElementById('dcExecRow');
+    row.className = `grid grid-cols-1 ${tiles.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 mb-5`;
+    setHtmlIfChanged(row, tiles.join(''));
     document.getElementById('dcAllocBars').innerHTML = '';
     document.getElementById('dcFootnote').textContent = '';
 
