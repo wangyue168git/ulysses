@@ -8,7 +8,7 @@
 
 1. 登录 IB 网页后台（Client Portal），进入 **业绩与报表（Performance & Reports）→ Flex 查询（Flex Queries）**。
 2. 在 **活动 Flex 查询（Activity Flex Query）** 一栏点 **+** 新建。
-3. 查询名称随便填，比如 `calm-positions`。
+3. 查询名称随便填，比如 `ulysses-positions`。
 4. **区块（Sections）** 里只勾 **未平仓头寸（Open Positions）**：
    - 选项（Options）选 **汇总（Summary）**，不要选逐批（Lot）；
    - 字段最省事的做法是点 **全选（Select All）**。只想勾必要字段的话，至少要有下表这些。
@@ -31,7 +31,7 @@
 ## 第 2 步：建「成交」查询（交易确认 Flex 查询）
 
 1. 同一页面，在 **交易确认 Flex 查询（Trade Confirmation Flex Query）** 一栏点 **+**。
-2. 名称比如 `calm-trades`。
+2. 名称比如 `ulysses-trades`。
 3. 区块勾 **交易确认（Trade Confirmations）**，字段同样建议 **全选**。至少要有：
 
 | 界面上的字段（大致名称） | 报表里的属性名 | 用途 |

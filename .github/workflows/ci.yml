@@ -30,12 +30,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t calm-portfolio:ci .
+      - run: docker build -t ulysses:ci .
       - name: 启动并检查健康接口
         run: |
           # 模拟云平台: 数据目录是 root 所有的挂载卷, 程序要能写进去, 且不能以 root 运行
           mkdir -p "$RUNNER_TEMP/data" && sudo chown root:root "$RUNNER_TEMP/data" && sudo chmod 755 "$RUNNER_TEMP/data"
-          docker run -d --name cp -p 3457:3457 -v "$RUNNER_TEMP/data:/data" -e APP_PASSWORD=ci-password -e DEMO=1 calm-portfolio:ci
+          docker run -d --name cp -p 3457:3457 -v "$RUNNER_TEMP/data:/data" -e APP_PASSWORD=ci-password -e DEMO=1 ulysses:ci
           ok=0
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:3457/healthz >/dev/null; then ok=1; break; fi

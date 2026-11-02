@@ -87,7 +87,7 @@ try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 const PORTFOLIO_FILE = path.join(DATA_DIR, "portfolio.json");
 // 演示模式: DEMO=1 且数据目录还没有持仓时, 用 examples/ 里的虚构持仓做初始数据
 if (process.env.DEMO === "1" && !fs.existsSync(PORTFOLIO_FILE)) {
-  try { fs.copyFileSync(path.join(__dirname, "examples", "portfolio.example.json"), PORTFOLIO_FILE); console.log("[calm-portfolio] 演示模式: 已载入示例持仓"); }
+  try { fs.copyFileSync(path.join(__dirname, "examples", "portfolio.example.json"), PORTFOLIO_FILE); console.log("[ulysses] 演示模式: 已载入示例持仓"); }
   catch (e) { console.error("示例持仓载入失败:", e.message); }
 }
 const HISTORY_FILE = path.join(DATA_DIR, "history.json");
@@ -495,7 +495,7 @@ function initAuth() {
   AUTH = make(pwd);
   try { fs.writeFileSync(AUTH_FILE, JSON.stringify(AUTH), { mode: 0o600 }); }
   catch (e) { console.error("auth.json 写入失败:", e.message); }
-  console.log(`\n[calm-portfolio] 首次启动, 已生成登录密码: ${pwd}\n  只显示这一次。想自己指定密码: 设置环境变量 APP_PASSWORD 后重启。\n`);
+  console.log(`\n[ulysses] 首次启动, 已生成登录密码: ${pwd}\n  只显示这一次。想自己指定密码: 设置环境变量 APP_PASSWORD 后重启。\n`);
 }
 initAuth();
 
@@ -2963,7 +2963,7 @@ function withHardTimeout(promise, ms) {
     console.log(`券商自动同步已启用: ${brokerSyncs.map((s) => s.label + (s.status().dryRun ? "(试运行)" : "")).join("、")}`);
   }
   server.listen(PORT, () => {
-    console.log(`Calm Portfolio running at http://localhost:${PORT}`);
+    console.log(`Ulysses running at http://localhost:${PORT}`);
     console.log("Storage: file only");
     if (typeof process.send === "function") process.send({ type: "listening", port: server.address().port });
   });

@@ -2,7 +2,7 @@
 // AI 的立场和输出格式。和产品理念一致: 按自己的规则长期投资, 不预测、不择时、不鼓励频繁改规则。
 const { validateRule, validateAllocation, describeRule, currentAllocation, ALLOC_FIELDS, SYMBOL_RE, validateCreed, validateIndexPlan, describeIndexPlan } = require("../plan-edit");
 
-const SYSTEM_PROMPT = `你是「冷静持仓」看板里的投资纪律助手。用户用这个看板按自己写下的规则长期投资，不想天天盯盘。你的工作是帮用户看清自己的持仓和规则，而不是替用户做交易决定。
+const SYSTEM_PROMPT = `你是「尤利西斯」(Ulysses)看板里的投资纪律助手。用户用这个看板按自己写下的规则长期投资，不想天天盯盘。你的工作是帮用户看清自己的持仓和规则，而不是替用户做交易决定。
 
 原则：
 - 不预测短期涨跌，不给买卖时点，不推荐具体买哪只新股票。用户问"现在该不该买/卖"，就回到他的规则：规则怎么说、为什么这么说。

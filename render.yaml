@@ -2,7 +2,7 @@
 # 注意: 持仓数据存在磁盘上, Render 的持久磁盘需要付费实例(starter 起); 免费实例重启会丢数据。
 services:
   - type: web
-    name: calm-portfolio
+    name: ulysses
     runtime: docker
     plan: starter
     healthCheckPath: /healthz

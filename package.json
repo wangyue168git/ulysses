@@ -1,5 +1,5 @@
 {
-  "name": "calm-portfolio",
+  "name": "ulysses",
   "version": "0.1.0",
   "scripts": {
     "start": "node server.js",
@@ -10,6 +10,6 @@
     "@anthropic-ai/sdk": "^1.3.0",
     "ws": "^8.21.0"
   },
-  "description": "自托管的冷静持仓看板：多账户汇总、按自己的规则提示可加/封仓、防焦虑设计",
+  "description": "把自己绑在桅杆上：自托管的持仓看板，冷静时写下规则，冲动时替你守住。Tie yourself to the mast — a self-hosted portfolio dashboard that holds you to your own rules.",
   "license": "MIT"
 }

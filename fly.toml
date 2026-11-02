@@ -1,5 +1,5 @@
 # Fly.io 部署: 先 `fly launch --no-deploy`(会问应用名和地区, 可沿用本文件), 再按 README 的步骤建磁盘、设密码、部署。
-app = "calm-portfolio"
+app = "ulysses-portfolio"   # Fly 的应用名全局唯一, 被占用就换一个
 primary_region = "hkg"
 
 [build]
@@ -12,7 +12,7 @@ primary_region = "hkg"
   TRUST_PROXY = "1"
 
 [mounts]
-  source = "calm_data"
+  source = "ulysses_data"
   destination = "/data"
 
 [http_service]

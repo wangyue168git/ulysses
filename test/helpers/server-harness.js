@@ -57,7 +57,7 @@ function writeFixtures(dir, portfolio = fixturePortfolio()) {
 }
 
 async function startServer({ quotes = fixtureQuotes(), failWrites = false, portfolio, extraEnv = {} } = {}) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "calm-portfolio-test-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ulysses-test-"));
   writeFixtures(dir, portfolio);
   const child = fork(path.join(ROOT, "server.js"), [], {
     cwd: ROOT,
