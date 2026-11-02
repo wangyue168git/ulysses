@@ -16,7 +16,7 @@
     <script src="/chart.umd.min.js"></script>
     <script src="/classify.js?v=17"></script><!-- 改 classify.js 时三处版本号同步: index.html / m.html / sw.js -->
     <script src="/csv-import.js?v=1"></script>
-    <script src="/ai-panel.js?v=2"></script>
+    <script src="/ai-panel.js?v=4"></script>
     <style>
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
@@ -2251,6 +2251,8 @@ CalmAI.init({
         try { planDoc = await (await authedFetch('/plan.json?t=' + Date.now(), { cache: 'no-store' })).json(); if (typeof configureGroups === 'function') configureGroups(planDoc.groups); } catch (e) {}
         await refreshPortfolioData();
     },
+    getAccounts: () => (portfolioData && portfolioData.accounts) || [],
+    onPortfolioChanged: () => refreshPortfolioData(),
 });
 let _aiChecked = false;
 function checkAiEntry() {

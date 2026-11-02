@@ -11,10 +11,14 @@ const { canCommitGeneration, evaluateQuoteHealth, quoteKey, serializeFreshness }
 const { createIbSync, shanghaiDay, parseExtras: parseIbExtras } = require("./ib-sync");
 const { buildBrokerSyncs } = require("./brokers");
 const { planImport } = require("./csv-import");
-const { applySymbolRule, applyAllocation } = require("./plan-edit");
-const { aiConfigFromEnv, streamChat } = require("./ai/providers");
+const { applySymbolRule, applyAllocation, applyCreed, applyMotto, applyIndexPlan } = require("./plan-edit");
+const { aiConfigFromEnv } = require("./ai/providers");
+const { runAgent } = require("./ai/agent");
+const { createToolset } = require("./ai/tools");
+const { createNotesStore } = require("./ai/notes");
+const { extractHoldings } = require("./ai/vision");
 const { buildAiContext } = require("./ai/context");
-const { buildSystem, extractProposals, validateProposals, CHECKUP_PROMPT } = require("./ai/prompts");
+const { buildSystem, extractProposals, validateProposals, CHECKUP_PROMPT, ONBOARD_START } = require("./ai/prompts");
 const { createPendingStore } = require("./ai/pending");
 
 // 给所有 outbound https/http.get 加 timeout → destroy 兜底。
@@ -655,18 +659,29 @@ const AI = aiConfigFromEnv(process.env);
 const AI_COOLDOWN_HOURS = Math.max(0, Math.min(24 * 30, Number(process.env.AI_COOLDOWN_HOURS) || 0));
 const AI_ANONYMIZE_DEFAULT = process.env.AI_SEND_AMOUNTS !== "1";   // 默认只发比例
 const aiPending = createPendingStore(path.join(DATA_DIR, "ai-pending.json"));
+const aiNotes = createNotesStore(path.join(DATA_DIR, "advisor-notes.md"));
 // 把确认过的建议写进 plan.json(每条一条 changelog, 标记来源 AI)
 function applyAiProposals(proposals, reason) {
   const plan = JSON.parse(JSON.stringify(loadPlan() || {}));
   const results = [];
+  let planChanged = false;
   validateProposals(proposals, plan).forEach((p) => {
     const why = reason ? `${reason}（AI 建议：${p.why || "无"}）` : `AI 建议：${p.why || "无"}`;
-    const r = p.kind === "symbol"
-      ? applySymbolRule(plan, p.symbol, p.rule, { reason: why, source: "ai" })
-      : applyAllocation(plan, p.change, { reason: why, source: "ai" });
-    results.push({ summary: p.summary, ok: !r.error, error: r.error });
+    const opt = { reason: why, source: "ai" };
+    let r;
+    if (p.kind === "note") { aiNotes.append(p.text); r = {}; }
+    else {
+      r = p.kind === "symbol" ? applySymbolRule(plan, p.symbol, p.rule, opt)
+        : p.kind === "allocation" ? applyAllocation(plan, p.change, opt)
+        : p.kind === "creed" ? applyCreed(plan, p.lines, opt)
+        : p.kind === "motto" ? applyMotto(plan, p.text, opt)
+        : p.kind === "indexPlan" ? applyIndexPlan(plan, p.indexPlan, opt)
+        : { error: "未知的建议类型" };
+      if (!r.error) planChanged = true;
+    }
+    results.push({ summary: p.summary, ok: !r.error, error: r.error, kind: p.kind });
   });
-  if (results.some((r) => r.ok) && !savePlan(plan)) throw new Error("规则保存失败");
+  if (planChanged && !savePlan(plan)) throw new Error("规则保存失败");
   return results;
 }
 
@@ -1342,7 +1357,8 @@ const server = http.createServer((req, res) => {
     let _bodyBytes = 0;
     req.on("data", (chunk) => {
       _bodyBytes += chunk.length;
-      if (_bodyBytes > 64 * 1024 && !res.headersSent) {
+      const _limit = urlObj.pathname === "/api/ai/vision-import" ? 12 * 1024 * 1024 : urlObj.pathname.startsWith("/api/ai/") ? 1024 * 1024 : 64 * 1024;
+      if (_bodyBytes > _limit && !res.headersSent) {
         res.writeHead(413, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: false, error: "请求体过大" }));
         req.destroy();
@@ -1469,7 +1485,7 @@ const server = http.createServer((req, res) => {
     const currentData = () => latestData || loadPortfolio();
 
     if (urlObj.pathname === "/api/ai/config" && req.method === "GET") {
-      sendJson(200, { enabled: AI.enabled, provider: AI.enabled ? AI.provider : null, model: AI.enabled ? AI.model : null, anonymizeDefault: AI_ANONYMIZE_DEFAULT, cooldownHours: AI_COOLDOWN_HOURS, checkupPrompt: CHECKUP_PROMPT });
+      sendJson(200, { enabled: AI.enabled, provider: AI.enabled ? AI.provider : null, model: AI.enabled ? AI.model : null, anonymizeDefault: AI_ANONYMIZE_DEFAULT, cooldownHours: AI_COOLDOWN_HOURS, checkupPrompt: CHECKUP_PROMPT, onboardPrompt: ONBOARD_START, vision: AI.enabled ? (AI.visionModel || AI.model) : null });
       return;
     }
     if (!AI.enabled) { sendJson(404, { ok: false, error: "未配置 AI(见 .env 的 AI_PROVIDER)" }); return; }
@@ -1491,19 +1507,50 @@ const server = http.createServer((req, res) => {
         while (msgs.length && msgs[0].role !== "user") msgs.shift();
         if (!msgs.length || msgs[msgs.length - 1].role !== "user") { sendJson(400, { ok: false, error: "最后一条应该是你的问题" }); return; }
         const plan = loadPlan();
-        const system = buildSystem(buildAiContext(currentData(), plan, { anonymize: args.anonymize !== false }).text);
+        const anonymize = args.anonymize !== false;
+        const mode = args.mode === "onboard" ? "onboard" : "chat";
+        const system = buildSystem(buildAiContext(currentData(), plan, { anonymize }).text, { notes: aiNotes.read(), mode });
+        const toolset = createToolset({ getData: currentData, getPlan: loadPlan, getJournal: loadJournalFile, getHistory: loadHistory, anonymize });
         res.writeHead(200, { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no", Connection: "keep-alive" });
         const send = (event, data) => { if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
         const ac = new AbortController();
         res.on("close", () => ac.abort());
         let full = "";
         try {
-          const r = await streamChat(AI, { system, messages: msgs, signal: ac.signal, onText: (t) => { full += t; send("delta", { t }); } });
-          send("done", { proposals: extractProposals(full, plan), stopReason: r && r.stopReason });
+          const r = await runAgent(AI, {
+            system, messages: msgs, toolset, signal: ac.signal,
+            onText: (t) => { full += t; send("delta", { t }); },
+            onTool: (name, input) => send("tool", { name, label: toolset.label(name, input) }),
+          });
+          // 工具提的建议为主; 不支持工具的模型从文字里的 calm-proposals 代码块兜底
+          const seen = new Set(toolset.proposals.map((p) => p.summary));
+          const proposals = [...toolset.proposals, ...extractProposals(full, plan).filter((p) => !seen.has(p.summary))].slice(0, 12);
+          send("done", { proposals, stopReason: r && r.stopReason });
         } catch (e) {
           if (!ac.signal.aborted) send("error", { msg: String((e && e.message) || e).slice(0, 300) });
         }
         res.end();
+      });
+      return;
+    }
+
+    // 顾问笔记: 页面上可以直接查看、编辑
+    if (urlObj.pathname === "/api/ai/notes" && req.method === "GET") { sendJson(200, { ok: true, text: aiNotes.read(), max: aiNotes.MAX }); return; }
+    if (urlObj.pathname === "/api/ai/notes" && req.method === "PUT") {
+      readBody((args) => sendJson(200, { ok: true, text: aiNotes.write(String(args.text || "")) }));
+      return;
+    }
+
+    // 截图识别持仓: 返回识别出的行, 由页面让用户核对后再走导入预览
+    if (urlObj.pathname === "/api/ai/vision-import" && req.method === "POST") {
+      const retryAfter = takeRateLimit(req, "ai-vision", 20, 60 * 60 * 1000);
+      if (retryAfter) { rejectRateLimited(res, retryAfter); return; }
+      readBody(async (args) => {
+        const images = (Array.isArray(args.images) ? args.images : []).slice(0, 4)
+          .filter((i) => i && /^image\/(jpeg|png|webp|gif)$/.test(i.mediaType) && typeof i.data === "string" && i.data.length < 6 * 1024 * 1024);
+        if (!images.length) { sendJson(400, { ok: false, error: "请选择 1–4 张截图" }); return; }
+        try { sendJson(200, { ok: true, rows: await extractHoldings(AI, images) }); }
+        catch (e) { sendJson(502, { ok: false, error: String(e.message || e).slice(0, 300) }); }
       });
       return;
     }

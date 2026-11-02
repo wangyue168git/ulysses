@@ -17,7 +17,8 @@ function scrubAmounts(s) {
     .replace(/、目标 [\d.]+ 股/g, "、设了目标股数");
 }
 
-function buildAiContext(data, plan, { anonymize = true, now = new Date() } = {}) {
+// 每只持仓的占比、分组、可加/封仓(与页面同一套判断); buildAiContext 和「假设推演」工具共用
+function computeRows(data, plan, { anonymize = true } = {}) {
   plan = plan || {};
   if (typeof configureGroups === "function") configureGroups(plan.groups);
   const ch = plan.channels || {};
@@ -69,6 +70,12 @@ function buildAiContext(data, plan, { anonymize = true, now = new Date() } = {})
     x.channel = r ? `${r.label}（${anonymize ? scrubAmounts(r.why) : r.why}）` : "—";
   });
 
+  return { rows, bySym, total, cash, nasdaq, sp, stock, observation, crypto, cashPct, ch, symRules };
+}
+
+function buildAiContext(data, plan, { anonymize = true, now = new Date() } = {}) {
+  plan = plan || {};
+  const { rows, bySym, total, cash, nasdaq, sp, stock, observation, crypto, cashPct, ch, symRules } = computeRows(data, plan, { anonymize });
   const alloc = currentAllocation(plan);
   const L = [];
   L.push(`数据时间：${(data && data.timestamp) || now.toISOString()}`);
@@ -118,4 +125,4 @@ function buildAiContext(data, plan, { anonymize = true, now = new Date() } = {})
   return { text: L.join("\n"), facts: { total, stockPct: stock, indexPct: nasdaq + sp, observationPct: observation, holdings: rows.length } };
 }
 
-module.exports = { buildAiContext };
+module.exports = { buildAiContext, computeRows, scrubAmounts };

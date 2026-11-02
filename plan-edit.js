@@ -104,4 +104,49 @@ function applyAllocation(plan, rawChange, { reason = "", source = "page" } = {})
   return { changed: parts.length > 0, summary: parts.join("；") };
 }
 
-module.exports = { validateRule, describeRule, applySymbolRule, validateAllocation, applyAllocation, currentAllocation, ALLOC_FIELDS, SYMBOL_RE };
+// ---- 信条 / 页尾一句话 / 每月指数定投(新手起草规则时会用到) ----
+function validateCreed(lines) {
+  const arr = (Array.isArray(lines) ? lines : []).map((x) => String(x || "").trim()).filter(Boolean).slice(0, 8).map((x) => x.slice(0, 80));
+  return arr.length ? { lines: arr } : { error: "信条不能为空" };
+}
+function applyCreed(plan, lines, { reason = "", source = "page" } = {}) {
+  const v = validateCreed(lines);
+  if (v.error) return { error: v.error };
+  const before = ((plan.creed && plan.creed.lines) || []).join(" / ");
+  const after = v.lines.join(" / ");
+  if (before === after) return { changed: false };
+  plan.creed = { ...(plan.creed || {}), lines: v.lines };
+  pushChangelog(plan, `信条：${before || "未写"} → ${after}`, reason, source);
+  return { changed: true };
+}
+function applyMotto(plan, text, { reason = "", source = "page" } = {}) {
+  const t = String(text || "").trim().slice(0, 40);
+  if (!t) return { error: "一句话不能为空" };
+  if (plan.motto === t) return { changed: false };
+  pushChangelog(plan, `页尾一句话：${plan.motto || "未写"} → ${t}`, reason, source);
+  plan.motto = t;
+  return { changed: true };
+}
+function validateIndexPlan(x) {
+  const symbols = (Array.isArray(x && x.symbols) ? x.symbols : []).map((s) => String(s || "").trim().toUpperCase()).filter((s) => SYMBOL_RE.test(s)).slice(0, 6);
+  const monthly = Number(x && x.monthlyCNY), pass = x && x.passCNY !== undefined && x.passCNY !== null && x.passCNY !== "" ? Number(x.passCNY) : monthly;
+  if (!symbols.length) return { error: "至少要有一只定投标的" };
+  if (!(monthly > 0 && monthly < 1e8) || !(pass > 0 && pass <= monthly)) return { error: "每月金额需大于 0, 达标金额不高于目标金额" };
+  return { indexPlan: { symbols, monthlyCNY: monthly, passCNY: pass } };
+}
+const describeIndexPlan = (p) => (p && p.symbols ? `${p.symbols.join("/")} 每月 ¥${p.monthlyCNY}（买够 ¥${p.passCNY} 算完成）` : "未设");
+function applyIndexPlan(plan, x, { reason = "", source = "page" } = {}) {
+  const v = validateIndexPlan(x);
+  if (v.error) return { error: v.error };
+  plan.channels = plan.channels || {};
+  const before = describeIndexPlan(plan.channels.indexPlan), after = describeIndexPlan(v.indexPlan);
+  if (before === after) return { changed: false };
+  plan.channels.indexPlan = { ...(plan.channels.indexPlan || {}), ...v.indexPlan };
+  pushChangelog(plan, `每月指数定投：${before} → ${after}`, reason, source);
+  return { changed: true };
+}
+
+module.exports = {
+  validateRule, describeRule, applySymbolRule, validateAllocation, applyAllocation, currentAllocation, ALLOC_FIELDS, SYMBOL_RE,
+  validateCreed, applyCreed, applyMotto, validateIndexPlan, applyIndexPlan, describeIndexPlan,
+};

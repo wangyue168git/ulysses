@@ -19,6 +19,14 @@ function aiConfigFromEnv(env = process.env) {
     effort: env.AI_EFFORT || (provider === "anthropic" && model === DEFAULT_MODELS.anthropic ? "medium" : ""),
     maxTokens: Math.min(Math.max(Number(env.AI_MAX_TOKENS) || 16000, 1000), 64000),
     mockReply: env.AI_MOCK_REPLY || "",
+    mockScript: env.AI_MOCK_SCRIPT || "",
+    mockVisionReply: env.AI_MOCK_VISION || "",
+    // 截图识别用的模型(要支持看图); 不填用 AI_MODEL。DeepSeek 等不支持图片的, 可另配一个视觉模型
+    visionModel: String(env.AI_VISION_MODEL || "").trim(),
+    // 视觉模型可以在另一家平台(比如对话用 DeepSeek、看图用智谱): 不填就沿用上面的接口/Key
+    visionProvider: String(env.AI_VISION_PROVIDER || "").trim().toLowerCase(),
+    visionBaseUrl: String(env.AI_VISION_BASE_URL || "").replace(/\/+$/, ""),
+    visionApiKey: env.AI_VISION_API_KEY || "",
   };
 }
 

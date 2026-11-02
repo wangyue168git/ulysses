@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/tailwind.css?v=10">
 <script src="/chart.umd.min.js"></script>
 <script src="/classify.js?v=17"></script>
-<script src="/ai-panel.js?v=2"></script>
+<script src="/ai-panel.js?v=4"></script>
 <style>
     :root {
         color-scheme: light;
@@ -2097,6 +2097,8 @@ CalmAI.init({
         try { planDoc = await (await authedFetch('/plan.json?t=' + Date.now(), { cache: 'no-store' })).json(); if (typeof configureGroups === 'function') configureGroups(planDoc.groups); } catch (e) {}
         if (state) { render(); renderDisciplineM(); }
     },
+    getAccounts: () => (state && state.accounts) || [],
+    onPortfolioChanged: () => setTimeout(manualRefresh, 800),   // 服务端写完也会经 WS 推送, 这里再拉一次兜底
 });
 let _aiChecked = false;
 function checkAiEntry(){

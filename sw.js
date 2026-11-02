@@ -1,12 +1,12 @@
 // Calm Portfolio PWA Service Worker —— 缓存外壳: 二次打开秒开 + 离线可看上次画面
 // 策略: 外壳/静态资源 stale-while-revalidate(先给缓存、后台更新); /api/* 与 WebSocket 不缓存,始终走网络。
-const CACHE = 'calm-portfolio-v6';
+const CACHE = 'calm-portfolio-v7';
 const SHELL = [
   '/m.html',
   '/tailwind.css?v=10',
   '/chart.umd.min.js',
   '/classify.js?v=17',
-  '/ai-panel.js?v=2',
+  '/ai-panel.js?v=4',
   '/manifest.json',
   '/favicon.ico',
   '/icon-192.png',
