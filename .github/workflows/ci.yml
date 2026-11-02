@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 测试 (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  docker:
+    name: Docker 镜像能构建并启动
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t calm-portfolio:ci .
+      - name: 启动并检查健康接口
+        run: |
+          # 模拟云平台: 数据目录是 root 所有的挂载卷, 程序要能写进去, 且不能以 root 运行
+          mkdir -p "$RUNNER_TEMP/data" && sudo chown root:root "$RUNNER_TEMP/data" && sudo chmod 755 "$RUNNER_TEMP/data"
+          docker run -d --name cp -p 3457:3457 -v "$RUNNER_TEMP/data:/data" -e APP_PASSWORD=ci-password -e DEMO=1 calm-portfolio:ci
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3457/healthz >/dev/null; then ok=1; break; fi
+            sleep 1
+          done
+          docker logs cp
+          [ "$ok" = 1 ] || { echo "healthz 失败"; exit 1; }
+          test -s "$RUNNER_TEMP/data/portfolio.json" || { echo "数据没写进挂载卷"; exit 1; }
+          [ "$(docker exec cp sh -c 'ps -o user= -p 1 2>/dev/null || stat -c %U /proc/1')" != "root" ] || { echo "进程以 root 运行"; exit 1; }
+          echo "镜像正常: 能写挂载卷, 非 root 运行"

@@ -1,0 +1,21 @@
+# Render 一键部署(Blueprint)。点 README 里的「Deploy to Render」按钮会读这个文件。
+# 注意: 持仓数据存在磁盘上, Render 的持久磁盘需要付费实例(starter 起); 免费实例重启会丢数据。
+services:
+  - type: web
+    name: calm-portfolio
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: APP_PASSWORD
+        sync: false          # 部署时让你填登录密码
+      - key: PUBLIC_READ
+        value: "0"
+      - key: TRUST_PROXY
+        value: "1"           # Render 前面有代理, 限流要用真实 IP
+      - key: DEMO
+        value: "0"

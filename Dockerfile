@@ -8,8 +8,9 @@ RUN npm ci --omit=dev
 ARG EXTRA_PACKAGES=""
 RUN if [ -n "$EXTRA_PACKAGES" ]; then npm install --omit=dev --no-save $EXTRA_PACKAGES; fi
 COPY . .
-RUN mkdir -p /data && chown -R node:node /data /app
-USER node
+RUN mkdir -p /data && chown -R node:node /data /app && chmod +x /app/docker-entrypoint.sh
 VOLUME ["/data"]
 EXPOSE 3457
+# 以 root 启动只为修正数据目录权限, 随后降权为 node 用户运行(见 docker-entrypoint.sh)
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "server.js"]

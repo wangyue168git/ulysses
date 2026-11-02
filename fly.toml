@@ -1,0 +1,34 @@
+# Fly.io 部署: 先 `fly launch --no-deploy`(会问应用名和地区, 可沿用本文件), 再按 README 的步骤建磁盘、设密码、部署。
+app = "calm-portfolio"
+primary_region = "hkg"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3457"
+  DATA_DIR = "/data"
+  PUBLIC_READ = "0"
+  TRUST_PROXY = "1"
+
+[mounts]
+  source = "calm_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3457
+  force_https = true
+  auto_stop_machines = "off"   # 后台要定时取行情、同步券商, 不能自动休眠
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    method = "GET"
+    path = "/healthz"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
