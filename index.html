@@ -14,9 +14,9 @@
     <!-- tailwind.css 重建: npx tailwindcss@3 -c tailwind.config.js -i tailwind.input.css -o tailwind.css --minify -->
     <link rel="stylesheet" href="/tailwind.css?v=10"><!-- 改 tailwind.css 时三处版本号同步: index.html / m.html / sw.js -->
     <script src="/chart.umd.min.js"></script>
-    <script src="/classify.js?v=17"></script><!-- 改 classify.js 时三处版本号同步: index.html / m.html / sw.js -->
+    <script src="/classify.js?v=18"></script><!-- 改 classify.js 时三处版本号同步: index.html / m.html / sw.js -->
     <script src="/csv-import.js?v=1"></script>
-    <script src="/ai-panel.js?v=4"></script>
+    <script src="/ai-panel.js?v=5"></script>
     <style>
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
@@ -1361,7 +1361,7 @@ function renderDiscipline(data) {
         const lbl = ev.label;
         const tagCls = st === 'open' ? 'bg-teal-50 text-teal-600' : 'bg-slate-100 text-slate-400';
         gRow = `<div class="flex items-center justify-between text-xs mt-3">
-                <span class="font-bold text-slate-500">${gSym} <span class="text-slate-400 font-semibold tabular-nums">${gPct.toFixed(1)} / ≤${gCap}</span></span>
+                <span class="font-bold text-slate-500">${esc(gSym)} <span class="text-slate-400 font-semibold tabular-nums">${gPct.toFixed(1)} / ≤${gCap}</span></span>
                 <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded ${tagCls}">${lbl}</span>
             </div>
             <div class="relative rounded-full bg-slate-200" style="height:8px;margin-top:6px;margin-right:2px">
@@ -1441,9 +1441,9 @@ function renderDcAnalysis(data, mulOf, ctx) {
         if (c.type !== 'premium') return;
         const r = rows.find(x => x.h.symbol === sym); if (!r) return;
         const pr = r.h.premiumPct;
-        if (pr === null || pr === undefined) { items.push(`<span class="dcs-it"><span class="dcs-k">${sym} 溢价</span><span class="dcs-v">—</span><span class="dcs-tag seal">封</span></span>`); return; }
+        if (pr === null || pr === undefined) { items.push(`<span class="dcs-it"><span class="dcs-k">${esc(sym)} 溢价</span><span class="dcs-v">—</span><span class="dcs-tag seal">封</span></span>`); return; }
         const open = pr <= c.maxPremiumPct;
-        items.push(`<span class="dcs-it"><span class="dcs-k">${sym} 溢价</span><span class="dcs-v font-mono ${open ? 'dcs-ok' : 'dcs-amber'}">${pr.toFixed(1)}%</span><span class="dcs-tag ${open ? 'open' : 'seal'}">${open ? '可加' : '封'}</span></span>`);
+        items.push(`<span class="dcs-it"><span class="dcs-k">${esc(sym)} 溢价</span><span class="dcs-v font-mono ${open ? 'dcs-ok' : 'dcs-amber'}">${pr.toFixed(1)}%</span><span class="dcs-tag ${open ? 'open' : 'seal'}">${open ? '可加' : '封'}</span></span>`);
     });
     // ② 观察仓合计(占比 <5% 的小仓个股, 与饼图 classifyPieGroup 同口径): 规则里设了 channels.observationCapPct 才显示
     const obsCap = Number(ch && ch.observationCapPct) || 0;
@@ -1676,7 +1676,7 @@ function renderAccountTables(rate, totalCNY) {
                 <tr data-holding-key="${ai}-${hi}" class="group border-b last:border-0 hover:bg-slate-50/50 transition">
                     <td class="py-3.5 px-4">
                         <div class="font-semibold text-slate-800">${esc(h.name)}</div>
-                        <div class="text-xs text-slate-400">${h.symbol} · ${mktLabel}</div>
+                        <div class="text-xs text-slate-400">${esc(h.symbol)} · ${mktLabel}</div>
                     </td>
                     <td class="py-3.5 px-4 font-mono text-sm ${colorCls}">
                         <div data-live-field="price" class="mask-amount ${colorCls}">${sym}${fmtN(h.currentPrice)}</div>
@@ -2027,7 +2027,7 @@ function fmtW(v) {
     return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }   // 也转义引号: 结果可能放进属性里
 
 // ---- Modals ----
 // ===== 买入规则（添加/编辑持仓弹窗里的可选项, 写进 plan.json channels.symbols） =====
@@ -2095,7 +2095,7 @@ function readRuleForm(p){
     if (isNaN(lo) || isNaN(hi) || lo < 0 || hi > 100 || lo > hi) return { error: '占比填写有误：需在 0–100 之间，且「可加」不高于「封仓」' };
     const rule = { type: 'band', openBelowPct: lo, sealAtPct: hi };
     if (tg) { const n = parseFloat(tg); if (!(n > 0)) return { error: '目标股数需大于 0' }; rule.targetShares = n; }
-    rule.why = `${lo}% 以下可加，${hi}% 封仓` + (rule.targetShares ? `；目标 ${rule.targetShares} 股` : '');
+    rule.why = `${lo}% 以下可加，${hi}% 封仓` + (rule.targetShares ? '；设了目标股数' : '');   // 股数进度由判断逻辑另行显示, 这里不写具体股数
     return { rule, reason };
 }
 async function saveRule(sym, rule, reason){
@@ -2216,7 +2216,7 @@ async function impPreview() {
     const rows = CsvImport.extractRows(_impRows, _impRows._header, columns);
     if (!rows.length) { box.innerHTML = '<span class="text-amber-600">没有读到有效的持仓行，检查一下选的列。</span>'; return; }
     const seq = ++_impSeq;
-    const res = await fetch('/api/import/positions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Auth-Token': authToken }, body: JSON.stringify({ accountIndex: parseInt(document.getElementById('impAccount').value), rows }) });
+    const res = await fetch('/api/import/positions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Auth-Token': authToken }, body: JSON.stringify({ accountIndex: parseInt(document.getElementById('impAccount').value), accountName: ((portfolioData && portfolioData.accounts || [])[parseInt(document.getElementById('impAccount').value)] || {}).name, rows }) });
     if (seq !== _impSeq) return;
     if (!res.ok) { box.innerHTML = `<span class="text-red-500">${esc(await res.text())}</span>`; return; }
     _impPlan = (await res.json()).plan;
@@ -2233,10 +2233,15 @@ async function impPreview() {
         </tbody></table></div>`;
     btn.disabled = !(n('new') + n('update'));
 }
+let _impApplying = false;
 async function impApply() {
-    if (!_impPlan || !_impRows) return;
+    if (!_impPlan || !_impRows || _impApplying) return;
+    _impApplying = true;
+    try { await impApplyInner(); } finally { _impApplying = false; }
+}
+async function impApplyInner() {
     const rows = _impPlan.filter(x => x.status === 'new' || x.status === 'update' || x.status === 'same').map(x => ({ symbol: x.symbol, name: x.name, qty: x.qty, cost: x.cost }));
-    const res = await fetch('/api/import/positions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Auth-Token': authToken }, body: JSON.stringify({ accountIndex: parseInt(document.getElementById('impAccount').value), rows, apply: true }) });
+    const res = await fetch('/api/import/positions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Auth-Token': authToken }, body: JSON.stringify({ accountIndex: parseInt(document.getElementById('impAccount').value), accountName: ((portfolioData && portfolioData.accounts || [])[parseInt(document.getElementById('impAccount').value)] || {}).name, rows, apply: true }) });
     if (res.status === 401) { authToken = ''; localStorage.removeItem('authToken'); alert('认证已过期，请重新操作'); closeModals(); return; }
     if (!res.ok) { alert('导入失败：' + await res.text()); return; }
     closeModals();
@@ -3388,7 +3393,7 @@ function showAddJournal(editId) {
     if (portfolioData && portfolioData.accounts) {
         portfolioData.accounts.forEach(acc => {
             acc.holdings.forEach(h => {
-                sel.innerHTML += `<option value="${h.symbol}">${h.name} (${h.symbol})</option>`;
+                sel.innerHTML += `<option value="${esc(h.symbol)}">${esc(h.name)} (${esc(h.symbol)})</option>`;
             });
         });
     }

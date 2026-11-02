@@ -85,7 +85,11 @@ function accountEditor(portfolio) {
     },
   };
 }
-const newHolding = (x) => ({ symbol: x.symbol, market: x.market || "nasdaq", name: x.name || x.symbol, transactions: [] });
+// 券商/自定义适配器给的名称和代码都不可信: 名称去掉尖括号引号, 代码不合规的整条跳过(见 validItem)
+const SYMBOL_RE = /^[A-Z0-9.\-]{1,15}$/;
+const MARKETS = new Set(["nasdaq", "nyse", "hk", "sh", "sz", "fund", "crypto"]);
+const newHolding = (x) => ({ symbol: x.symbol, market: MARKETS.has(x.market) ? x.market : "nasdaq", name: String(x.name || x.symbol).replace(/[<>"'`]/g, "").slice(0, 60) || x.symbol, transactions: [] });
+const validItem = (x) => x && SYMBOL_RE.test(String(x.symbol || ""));
 
 // 返回 { portfolio, state, actions[] }; 不做 IO。appendTrade = server.js 的 appendTradeToHolding
 function applyConfirms(portfolio, state, confirms, { accountName, appendTrade, tag = "IB#", reconNote = "IB 自动对账" }) {
@@ -100,14 +104,19 @@ function applyConfirms(portfolio, state, confirms, { accountName, appendTrade, t
   ed.get(accountName);   // 默认账户必须存在(与旧行为一致: 配错账户名直接报错)
   confirms.slice().sort((a, b) => a.date - b.date).forEach((c) => {
     if (seen.has(c.id)) return;
-    seen.add(c.id);
+    if (!validItem(c)) { seen.add(c.id); actions.push({ kind: "error", symbol: String(c.symbol || ""), id: c.id, msg: "代码不合规, 已跳过" }); return; }
     let acc;
+    // 账户找不到时不记入 seen: 用户建好账户后下次还能补上
     try { acc = ed.get(c.account || accountName); } catch (e) { actions.push({ kind: "error", symbol: c.symbol, id: c.id, msg: e.message }); return; }
+    seen.add(c.id);
     let hi = findHolding(acc, c.symbol);
     if (hi >= 0) {
-      // 用户已手动记过(成交之后有非自动的记录) → 不重复记
-      const manualAfter = (acc.holdings[hi].transactions || []).some((t) => !isAutoTx(t) && t.date && new Date(t.date) >= c.date);
-      if (manualAfter) { actions.push({ kind: "skip-manual", symbol: c.symbol, id: c.id }); return; }
+      // 用户已手动记过 → 不重复记: 成交之后有任何手动记录; 或成交前 36 小时内有同方向、同数量的手动记录
+      // (页面上手记的交易常只有日期, 会落在当天 0 点, 早于真实成交时间)
+      const manual = (acc.holdings[hi].transactions || []).filter((t) => !isAutoTx(t) && t.date);
+      const manualAfter = manual.some((t) => new Date(t.date) >= c.date);
+      const manualSame = manual.some((t) => t.type === c.side && Math.abs((Number(t.shares) || 0) - c.qty) < 1e-6 && new Date(t.date) >= new Date(c.date.getTime() - 36 * 3600 * 1000));
+      if (manualAfter || manualSame) { actions.push({ kind: "skip-manual", symbol: c.symbol, id: c.id }); return; }
     } else if (c.side === "buy") {
       acc.holdings.push(newHolding(c));
       hi = acc.holdings.length - 1;
@@ -143,13 +152,16 @@ function applyPositions(portfolio, state, positions, { accountName, appendTrade,
     return { portfolio, state: { ...state, positions: snap }, actions: [{ kind: "baseline", count: positions.length }], diff };
   }
   const ed = accountEditor(portfolio);
+  // 没写进去的(账户找不到/写入出错), 快照保留上次的值, 下次还会再试
+  const keepPrev = (x) => { const k = keyOf(x), p = state.positions[k]; if (p) snap[k] = p; else delete snap[k]; };
   positions.forEach((x) => {
+    if (!validItem(x)) { delete snap[keyOf(x)]; actions.push({ kind: "error", symbol: String(x.symbol || ""), msg: "代码不合规, 已跳过" }); return; }
     const prev = state.positions[keyOf(x)];
     const changed = !prev || Math.abs(prev.qty - x.qty) > 1e-6 || Math.abs(prev.cost - x.cost) > Math.max(1e-6, x.cost * 1e-4);
     if (!changed) return;                          // 券商没变 → 尊重看板(含用户手改)
     const w = withExtra(x, extras);                // 看板应有 = 券商 + 场外部分
     let acc;
-    try { acc = ed.get(x.account || accountName); } catch (e) { actions.push({ kind: "error", symbol: x.symbol, msg: e.message }); return; }
+    try { acc = ed.get(x.account || accountName); } catch (e) { keepPrev(x); actions.push({ kind: "error", symbol: x.symbol, msg: e.message }); return; }
     let hi = findHolding(acc, x.symbol);
     if (hi >= 0) {
       const h = acc.holdings[hi];
@@ -163,7 +175,7 @@ function applyPositions(portfolio, state, positions, { accountName, appendTrade,
       const note = w.extraQty ? `${reconNote}(含场外 ${w.extraQty} 股)` : reconNote;
       acc.holdings[hi] = appendTrade(acc.holdings[hi], { type: "sync", shares: +w.qty.toFixed(6), price: +w.cost.toFixed(6), date: now.toISOString(), note });
       actions.push({ kind: "sync", symbol: x.symbol, qty: +w.qty.toFixed(6), cost: +w.cost.toFixed(4), ...(w.extraQty ? { extraQty: w.extraQty } : {}) });
-    } catch (e) { actions.push({ kind: "error", symbol: x.symbol, msg: e.message }); }
+    } catch (e) { keepPrev(x); actions.push({ kind: "error", symbol: x.symbol, msg: e.message }); }
   });
   // 券商里已清仓、看板还有: 不自动删, 只提示(卖出应已由成交记过)
   Object.keys(state.positions).forEach((k) => {
@@ -195,7 +207,9 @@ function createBrokerSync({ adapter, accountName, stateFile, dryRun = false, ext
     const c = actions.filter((a) => WRITE_KINDS.includes(a.kind)).length;
     const b = actions.find((a) => a.kind === "baseline");
     if (b) return `首次运行, 记录基线 ${b.count} 条, 未改持仓`;
-    return c ? `更新 ${c} 处` : "无变化";
+    const errs = actions.filter((a) => a.kind === "error");
+    const errTxt = errs.length ? `; ${errs.length} 处没写进去: ${[...new Set(errs.map((e) => e.msg))].slice(0, 2).join(" / ")}` : "";
+    return (c ? `更新 ${c} 处` : "无变化") + errTxt;
   }
 
   async function runOne(kind) {
@@ -226,7 +240,9 @@ function createBrokerSync({ adapter, accountName, stateFile, dryRun = false, ext
       const r = kind === "positions" ? applyPositions(portfolio, state, items, opts) : applyConfirms(portfolio, state, items, opts);
       const wrote = r.portfolio !== portfolio && r.actions.some((a) => WRITE_KINDS.includes(a.kind));
       if (wrote && !dryRun && !savePortfolio(r.portfolio)) throw new Error("持仓写入失败");
-      const result = { at, ok: true, dryRun, msg: (dryRun ? "[试运行] " : "") + summarize(r.actions), actions: r.actions.slice(0, 50), diff: r.diff };
+      // 有没写进去的(多半是账户名不对), 标成需要人处理, 页面状态行会提示
+      const hasErr = r.actions.some((a) => a.kind === "error");
+      const result = { at, ok: !hasErr, ...(hasErr ? { hard: true } : {}), dryRun, msg: (dryRun ? "[试运行] " : "") + summarize(r.actions), actions: r.actions.slice(0, 50), diff: r.diff };
       const next = dryRun ? state : r.state;
       next.lastOkAt = at;
       if (kind === "positions") {

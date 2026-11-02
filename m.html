@@ -16,8 +16,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="/tailwind.css?v=10">
 <script src="/chart.umd.min.js"></script>
-<script src="/classify.js?v=17"></script>
-<script src="/ai-panel.js?v=4"></script>
+<script src="/classify.js?v=18"></script>
+<script src="/ai-panel.js?v=5"></script>
 <style>
     :root {
         color-scheme: light;
@@ -584,7 +584,7 @@ function updateCurUI(){ document.querySelectorAll('[data-cur]').forEach(b => b.c
 function fmt0(v){ return Math.round(v).toLocaleString('en-US'); }
 function fmt2(v){ return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtQty(v){ return Number(v).toLocaleString('en-US', { maximumFractionDigits: 4 }); }
-function esc(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }   // 也转义引号: 结果可能放进属性里
 function regionOf(h, cur){
     if (h.market === 'crypto') return '加密货币';
     if (cur === 'USD' || h.market === 'nasdaq' || h.market === 'nyse') return '美国';
@@ -817,7 +817,7 @@ function renderRegions(all, totalCNY){
             </div>`).join('');
         return `
         <div data-region-key="${esc(g.name)}" class="card overflow-hidden">
-            <button class="region-row w-full flex items-center px-4 py-3.5" aria-expanded="${expanded}" onclick="toggleRegion('${g.name.replace(/'/g, "\\'")}')">
+            <button class="region-row w-full flex items-center px-4 py-3.5" aria-expanded="${expanded}" onclick="toggleRegion(decodeURIComponent('${encodeURIComponent(g.name).replace(/'/g, '%27')}'))">
                 <span class="w-2.5 h-2.5 rounded-full mr-3 shrink-0" style="background:${color}"></span>
                 <span class="flex-1 text-left text-[16px] font-bold">${esc(g.name)}</span>
                 <span data-live-field="regionValue" class="num text-[16px] font-bold mr-2 blur-amt">${baseSym()} ${fmt0(toBase(g.value))}</span>
@@ -1457,7 +1457,7 @@ function readRuleForm(p){
     if (isNaN(lo) || isNaN(hi) || lo < 0 || hi > 100 || lo > hi) return { error: '占比填写有误：需在 0–100 之间，且「可加」不高于「封仓」' };
     const rule = { type: 'band', openBelowPct: lo, sealAtPct: hi };
     if (tg) { const n = parseFloat(tg); if (!(n > 0)) return { error: '目标股数需大于 0' }; rule.targetShares = n; }
-    rule.why = `${lo}% 以下可加，${hi}% 封仓` + (rule.targetShares ? `；目标 ${rule.targetShares} 股` : '');
+    rule.why = `${lo}% 以下可加，${hi}% 封仓` + (rule.targetShares ? '；设了目标股数' : '');   // 股数进度由判断逻辑另行显示, 这里不写具体股数
     return { rule, reason };
 }
 async function saveRule(sym, rule, reason){

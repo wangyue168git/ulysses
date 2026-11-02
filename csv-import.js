@@ -49,7 +49,9 @@
       Object.keys(ALIASES).forEach((k) => {
         let idx = -1;
         for (const a of ALIASES[k]) { idx = hs.findIndex((h) => h === norm(a)); if (idx >= 0) break; }
-        if (idx < 0) for (const a of ALIASES[k]) { idx = hs.findIndex((h) => h && h.includes(norm(a))); if (idx >= 0) break; }
+        // 模糊匹配时, 数量和成本价要排除「总额」类列(持仓成本/成本金额/市值/Cost Basis 等是总数, 不是每股)
+        const totalish = (h) => (k === "qty" || k === "cost") && /市值|金额|总|合计|value|amount|total|basis(?!price)|持仓成本$/.test(h);
+        if (idx < 0) for (const a of ALIASES[k]) { idx = hs.findIndex((h) => h && h.includes(norm(a)) && !totalish(h)); if (idx >= 0) break; }
         columns[k] = idx;
       });
       const score = Object.values(columns).filter((x) => x >= 0).length;
@@ -67,7 +69,7 @@
       sym = sym.replace(/^(SH|SZ|HK)(?=\d)/, "").replace(/\.(US|HK|SH|SZ|SS)$/, "");
       const qty = toNum(r[columns.qty]), cost = toNum(r[columns.cost]);
       if (!sym || !/^[A-Z0-9.\-]{1,15}$/.test(sym) || !(qty > 0) || !(cost >= 0)) return;
-      out.push({ symbol: sym, name: columns.name >= 0 ? String(r[columns.name] || "").trim() : "", qty, cost });
+      out.push({ symbol: sym, name: columns.name >= 0 ? String(r[columns.name] || "").replace(/[<>"'`]/g, "").trim().slice(0, 60) : "", qty, cost });
     });
     return out;
   }
@@ -77,7 +79,17 @@
   function planImport(account, rows) {
     const cur = (account && account.currency) || "CNY";
     const holdings = (account && account.holdings) || [];
-    const fix = (sym) => (cur === "HKD" && /^\d{1,5}$/.test(sym) ? sym.padStart(5, "0") : sym);
+    // 表格软件常把前导 0 吃掉: 港股补到 5 位, A 股补到 6 位
+    const fix = (sym) => (cur === "HKD" && /^\d{1,5}$/.test(sym) ? sym.padStart(5, "0") : cur === "CNY" && /^\d{1,5}$/.test(sym) ? sym.padStart(6, "0") : sym);
+    // 同一代码出现多行(比如普通 + 融资子账户): 合并成一行, 数量相加, 成本按数量加权
+    const merged = new Map();
+    rows.forEach((x) => {
+      const k = fix(String(x.symbol));
+      const m = merged.get(k);
+      if (m) { m.cost = (m.cost * m.qty + x.cost * x.qty) / (m.qty + x.qty); m.qty += x.qty; if (!m.name && x.name) m.name = x.name; }
+      else merged.set(k, { ...x, symbol: k });
+    });
+    rows = [...merged.values()];
     const marketOf = (sym) => cur === "USD" ? "nasdaq" : cur === "HKD" ? "hk" : (["6", "5", "9"].includes(sym[0]) ? "sh" : "sz");
     const seen = new Set();
     const items = rows.map((x) => {
@@ -93,7 +105,9 @@
     return [...items, ...missing];
   }
 
-  const api = { parseCsv, detectColumns, extractRows, planImport, ALIASES };
+  // 名称里去掉尖括号和引号: 名称会显示在页面上, 导入/识别来的文字一律不可信
+  const cleanName = (s) => String(s || "").replace(/[<>"'`]/g, "").trim().slice(0, 60);
+  const api = { parseCsv, detectColumns, extractRows, planImport, cleanName, ALIASES };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.CsvImport = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -58,7 +58,8 @@ function extractProposals(text, plan) {
 function validateProposals(arr, plan) {
   const out = [];
   const rules = ((plan && plan.channels) || {}).symbols || {};
-  for (const p of arr.slice(0, 5)) {
+  for (const p of arr.slice(0, 50)) {
+    if (out.length >= 12) break;   // 先过滤再计数: 无效的不占名额
     if (!p || typeof p !== "object") continue;
     const why = String(p.why || "").slice(0, 200);
     if (p.kind === "symbol") {

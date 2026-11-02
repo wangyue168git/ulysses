@@ -1,7 +1,7 @@
 "use strict";
 // AI 顾问的工具: 只有两类 —— 读数据, 和"提议"(收集起来等用户确认, 本身不改任何东西)。没有任何交易/写持仓的工具。
 // 定义与供应商无关: agent.js 把它们翻译成 Claude 的 tools 或 OpenAI 的 functions。
-const { computeRows, scrubAmounts } = require("./context");
+const { computeRows, scrubText, scrubFree } = require("./context");
 const { validateProposals } = require("./prompts");
 const { applySymbolRule, applyAllocation } = require("../plan-edit");
 
@@ -95,7 +95,14 @@ function createToolset(deps, { allowPropose = true } = {}) {
       const tx = [];
       ((deps.getData() || {}).accounts || []).forEach((a) => (a.holdings || []).forEach((h) => {
         if (String(h.symbol).toUpperCase() !== sym) return;
-        (h.transactions || []).forEach((t) => tx.push({ date: day(t.date), type: { buy: "买入", sell: "卖出", sync: "校准" }[t.type] || t.type, ...(anon ? {} : { shares: t.shares }), price: t.price, ...(t.note ? { note: anon ? scrubAmounts(t.note) : t.note } : {}) }));
+        const now = Number(h.currentPrice) || 0;
+        (h.transactions || []).forEach((t) => {
+          const type = { buy: "买入", sell: "卖出", sync: "校准" }[t.type] || t.type;
+          // 只发比例: 不发股数、不发价格(校准记录的价格就是成本价), 只给「成交价比现价高/低多少」, 不发备注
+          tx.push(anon
+            ? { date: day(t.date), type, ...(t.type !== "sync" && now > 0 && t.price > 0 ? { priceVsNowPct: +((t.price / now - 1) * 100).toFixed(1) } : {}) }
+            : { date: day(t.date), type, shares: t.shares, price: t.price, ...(t.note ? { note: t.note } : {}) });
+        });
       }));
       if (!tx.length) return `没有 ${sym} 的交易记录(可能没持有, 或代码写法不同)`;
       tx.sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -104,14 +111,15 @@ function createToolset(deps, { allowPropose = true } = {}) {
     get_journal({ symbol, limit = 10 }) {
       const sym = symbol ? String(symbol).trim().toUpperCase() : "";
       const TYPE = { buy: "买入理由", hold: "持有思考", sell: "卖出计划", note: "市场感悟" };
-      const scrub = (s) => (anon ? String(s).replace(/[¥$￥]\s?[\d,.]+|[\d,.]+\s?(万|元|股|美元|港币)/g, "[已隐去]") : String(s));
+      const scrub = (s) => (anon ? scrubFree(String(s)) : String(s));
       const list = (deps.getJournal() || []).filter((e) => !sym || String(e.stock || "").toUpperCase() === sym)
         .slice(0, Math.min(30, Math.max(1, limit))).map((e) => ({ date: day(e.date), type: TYPE[e.type] || e.type, stock: e.stock || "", content: scrub(e.content || "").slice(0, 600) }));
       return list.length ? JSON.stringify(list) : "没有日记";
     },
     get_rule_history({ limit = 10 }) {
       const log = ((deps.getPlan() || {}).changelog || []).slice(-Math.min(30, Math.max(1, limit)));
-      return log.length ? JSON.stringify(log.map((e) => ({ version: e.version, date: day(e.date), changes: e.changes, reason: e.reason || "", ...(e.source ? { source: e.source } : {}) }))) : "还没有修改记录";
+      const t = (v) => (anon ? scrubText(String(v)) : String(v));
+      return log.length ? JSON.stringify(log.map((e) => ({ version: e.version, date: day(e.date), changes: [].concat(e.changes || []).map(t), reason: t(e.reason || ""), ...(e.source ? { source: e.source } : {}) }))) : "还没有修改记录";
     },
     get_performance({ range }) {
       const snaps = ((deps.getHistory() || {}).snapshots || []).filter((x) => x && x.t && x.v > 0);

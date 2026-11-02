@@ -36,7 +36,7 @@ test("band: MSFT pure threshold 10/10", () => {
 test("band: NVDA hysteresis 8 open / 10 seal, keeps last in between", () => {
   const st = mem();
   assert.equal(evaluateChannel(cfg, "NVDA", { weightPct: 11, stockPct: 30 }, st).st, "seal");
-  assert.match(evaluateChannel(cfg, "NVDA", { weightPct: 11, stockPct: 30 }, st).why, /未到 8%/);
+  assert.match(evaluateChannel(cfg, "NVDA", { weightPct: 11, stockPct: 30 }, st).why, /占比 11\.0% ≥ 10%/);
   assert.equal(evaluateChannel(cfg, "NVDA", { weightPct: 9.0, stockPct: 30 }, st).st, "seal");    // 从上面掉进迟滞区: 保持封
   assert.equal(evaluateChannel(cfg, "NVDA", { weightPct: 7.9, stockPct: 30 }, st).st, "open");
   const mid = evaluateChannel(cfg, "NVDA", { weightPct: 9.2, stockPct: 30 }, st);

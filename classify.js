@@ -181,7 +181,7 @@ function evaluateChannel(cfg, sym, input, store) {
         const gate = stockPct >= cap ? `个股合计 ${stockPct.toFixed(1)}% ≥ ${cap}% 上限`
             : inHyst ? `占比 ${w.toFixed(1)}%，在 ${c.openBelowPct}–${c.sealAtPct}% 之间，保持${st === 'open' ? '可加' : '封仓'}`
             : st === 'open' ? `占比 ${w.toFixed(1)}% < ${c.openBelowPct}%`
-            : (c.openBelowPct < c.sealAtPct ? `占比 ${w.toFixed(1)}%，未到 ${c.openBelowPct}%` : `占比 ${w.toFixed(1)}% ≥ ${c.sealAtPct}%`);
+            : w >= c.sealAtPct ? `占比 ${w.toFixed(1)}% ≥ ${c.sealAtPct}%` : `占比 ${w.toFixed(1)}% < ${c.openBelowPct}%`;   // 后者只会出现在"股数已买够"时
         const shTxt = tgtSh > 0 ? (reached ? `已买够 ${+sh.toFixed(4)}/${tgtSh} 股 · ` : `${+sh.toFixed(4)}/${tgtSh} 股，还差 ${+(tgtSh - sh).toFixed(2)} 股 · `) : '';
         why = shTxt + gate + ' · ' + (c.why || '');
     } else if (type === 'premium') {

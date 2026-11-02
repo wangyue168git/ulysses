@@ -47,3 +47,13 @@ test("接口: 需登录; 预览不写; 确认后只改有变化的并新建, 不
   assert.equal(hs.find((h) => h.symbol === "MSFT").market, "nasdaq");
   assert.ok(hs.find((h) => h.symbol === "000001"), "文件里没有的不删");
 });
+
+test("审查修复: 重复代码合并、A 股补零、总额列不当成本价", () => {
+  const plan = planImport({ currency: "CNY", holdings: [{ symbol: "000001", shares: 100, costPrice: 10 }] },
+    [{ symbol: "1", qty: 100, cost: 10 }, { symbol: "600519", qty: 10, cost: 1600 }, { symbol: "600519", qty: 30, cost: 1400 }]);
+  assert.deepEqual(plan.map((x) => [x.status, x.symbol, x.qty, x.cost]), [["same", "000001", 100, 10], ["new", "600519", 40, 1450]]);
+  const rows = parseCsv("代码,名称,持仓数量,持仓成本,成本价\n600519,茅台,10,14000,1400\n");
+  assert.deepEqual(detectColumns(rows).columns, { symbol: 0, name: 1, qty: 2, cost: 4 });
+  const en = parseCsv("Symbol,Quantity,Cost Basis,Avg Cost\nAAPL,10,1500,150\n");
+  assert.equal(detectColumns(en).columns.cost, 3);
+});

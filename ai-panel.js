@@ -184,10 +184,10 @@
   }
 
   function proposalsHtml(m, i) {
-    const done = applied[i];
+    const done = applied[i] || m.applied;
     const cd = cfg && cfg.cooldownHours > 0;
     return `<div class="cai-props"><div class="t">AI 的修改建议 · 勾选后确认才会改规则${cd ? `（冷静期 ${cfg.cooldownHours} 小时后生效）` : ""}</div>
-      ${m.proposals.map((p, j) => `<label class="cai-p"><input type="checkbox" data-i="${i}" data-j="${j}" ${done ? "disabled" : "checked"}><span><div class="s">${esc(p.summary)}</div>${p.why ? `<div class="w">${esc(p.why)}</div>` : ""}</span></label>`).join("")}
+      ${m.proposals.map((p, j) => `<label class="cai-p"><input type="checkbox" data-i="${i}" data-j="${j}" ${done ? "disabled" : p.kind === "note" ? "" : "checked"}><span><div class="s">${esc(p.summary)}</div>${p.why ? `<div class="w">${esc(p.why)}</div>` : ""}${p.kind === "note" ? `<div class="w">（记进笔记后，以后每次对话都会发给 AI；默认不勾选）</div>` : ""}</span></label>`).join("")}
       ${done ? `<div class="cai-done">${esc(done)}</div>` : `<input type="text" data-reason="${i}" maxlength="200" placeholder="你的理由（可选，会记进修改记录）">
       <button class="cai-btn pri" data-act="apply" data-i="${i}">${cd ? "确认，加入待生效" : "确认修改"}</button>`}</div>`;
   }
@@ -205,8 +205,11 @@
     busy = new AbortController();
     render();
     try {
-      const history = msgs.filter((m) => (m.role === "user" || m.role === "assistant") && m !== a && m.content).map((m) => ({ role: m.role, content: m.content }));
-      const res = await api("/api/ai/chat", { method: "POST", body: JSON.stringify({ messages: history, anonymize: anon(), mode }), signal: busy.signal });
+      // 只发比例时, 不把「发金额模式」下得到的回答再发出去(里面可能有金额和股数)
+      const an = anon();
+      a.anon = an;
+      const history = msgs.filter((m) => (m.role === "user" || m.role === "assistant") && m !== a && m.content && !(an && m.role === "assistant" && m.anon === false)).map((m) => ({ role: m.role, content: m.content }));
+      const res = await api("/api/ai/chat", { method: "POST", body: JSON.stringify({ messages: history, anonymize: an, mode }), signal: busy.signal });
       if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || `请求失败（${res.status}）`); }
       const reader = res.body.getReader(), dec = new TextDecoder();
       let buf = "", last = 0;
@@ -247,27 +250,32 @@
     render();
   }
 
+  let _applying = false;
   async function apply(i) {
     const m = msgs[i];
-    if (!m || !m.proposals) return;
+    if (!m || !m.proposals || m.applied || _applying) return;
     const picked = [...root.querySelectorAll(`input[type=checkbox][data-i="${i}"]`)].filter((x) => x.checked).map((x) => m.proposals[+x.dataset.j]);
     if (!picked.length) return;
     const reason = (root.querySelector(`input[data-reason="${i}"]`) || {}).value || "";
+    _applying = true;
     try {
       const res = await api("/api/ai/apply", { method: "POST", body: JSON.stringify({ proposals: picked, reason }) });
       const j = await res.json();
       if (!res.ok || !j.ok) throw new Error(j.error || "修改失败");
       const okN = j.results.filter((r) => r.ok).length;
-      applied[i] = j.pending ? `已加入待生效，${new Date(j.dueAt).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 自动生效，之前可以撤销。` : `已修改 ${okN} 条，记进了规则修改记录。`;
+      const skipped = j.results.filter((r) => !r.ok).length;
+      applied[i] = (j.pending ? `已加入待生效，${new Date(j.dueAt).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 自动生效，之前可以撤销。` : `已修改 ${okN} 条，记进了规则修改记录。`) + (skipped ? `另有 ${skipped} 条没写入（已失效或和现状相同）。` : "");
+      m.applied = applied[i]; saveChat();
       if (!j.pending) hooks.onPlanChanged();
       loadPending();
     } catch (e) { applied[i] = null; alert(e.message); }
+    _applying = false;
     render();
   }
 
   async function loadPending() {
     const box = $(".cai-pendbox");
-    if (!cfg || !(cfg.cooldownHours > 0)) { box.innerHTML = ""; return; }
+    if (!cfg || !cfg.enabled) { box.innerHTML = ""; return; }
     try {
       const j = await (await api("/api/ai/pending")).json();
       const items = (j && j.items) || [];
@@ -366,7 +374,8 @@
     imp.accountIndex = sel ? +sel.value : 0;
     const rows = validRows().map((r) => ({ symbol: String(r.symbol).trim().toUpperCase(), name: String(r.name || "").trim(), qty: Number(r.qty), cost: Number(r.cost) }));
     if (!rows.length) { imp.msg = "没有完整的行（代码、数量、成本价都要有）"; imp.plan = null; renderImportPlan(); return null; }
-    const res = await api("/api/import/positions", { method: "POST", body: JSON.stringify({ accountIndex: imp.accountIndex, rows, apply }) });
+    const acc = (hooks.getAccounts() || [])[imp.accountIndex];
+    const res = await api("/api/import/positions", { method: "POST", body: JSON.stringify({ accountIndex: imp.accountIndex, accountName: acc ? acc.name : undefined, rows, apply }) });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   }
@@ -375,6 +384,8 @@
     renderImportPlan();
   }
   async function applyImport() {
+    if (imp.applying) return;
+    imp.applying = true;
     try {
       const j = await importCall(true);
       if (!j) return;
@@ -383,6 +394,7 @@
       msgs.push({ role: "assistant", content: `已从截图导入：新增 ${n("new")} 只，更新 ${n("update")} 只。截图里没有的持仓没有改动。` });
       saveChat(); imp = null; view = "chat"; render();
     } catch (e) { imp.msg = e.message; renderImportPlan(); }
+    if (imp) imp.applying = false;
   }
 
   function close() { if (root) root.style.display = "none"; document.body.style.overflow = ""; }

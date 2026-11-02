@@ -10,14 +10,27 @@ const { marketGroupForHolding, marketSession, pollDelayMs } = require("./market-
 const { canCommitGeneration, evaluateQuoteHealth, quoteKey, serializeFreshness } = require("./quote-health");
 const { createIbSync, shanghaiDay, parseExtras: parseIbExtras } = require("./ib-sync");
 const { buildBrokerSyncs } = require("./brokers");
-const { planImport } = require("./csv-import");
+const { planImport, cleanName } = require("./csv-import");
 const { applySymbolRule, applyAllocation, applyCreed, applyMotto, applyIndexPlan } = require("./plan-edit");
 const { aiConfigFromEnv } = require("./ai/providers");
 const { runAgent } = require("./ai/agent");
 const { createToolset } = require("./ai/tools");
 const { createNotesStore } = require("./ai/notes");
 const { extractHoldings } = require("./ai/vision");
-const { buildAiContext } = require("./ai/context");
+const { buildAiContext, scrubText } = require("./ai/context");
+// 给页面看的错误: 不回显上游接口的原始报文(可能含部分 key 或内部地址), 详情只写服务器日志
+function publicError(e) {
+  const m = String((e && e.message) || e || "出错了");
+  const http = /HTTP (\d{3})/.exec(m);
+  if (http) {
+    const code = +http[1];
+    return code === 401 || code === 403 ? `模型接口拒绝了请求（${code}），检查 AI_API_KEY 是否正确`
+      : code === 429 ? "模型接口限流或余额不足（429），稍后再试"
+      : code === 404 ? "模型接口地址或模型名不对（404），检查 AI_BASE_URL / AI_MODEL"
+      : `模型接口出错（HTTP ${code}），详情见服务器日志`;
+  }
+  return m.slice(0, 200);
+}
 const { buildSystem, extractProposals, validateProposals, CHECKUP_PROMPT, ONBOARD_START } = require("./ai/prompts");
 const { createPendingStore } = require("./ai/pending");
 
@@ -1358,10 +1371,12 @@ const server = http.createServer((req, res) => {
     req.on("data", (chunk) => {
       _bodyBytes += chunk.length;
       const _limit = urlObj.pathname === "/api/ai/vision-import" ? 12 * 1024 * 1024 : urlObj.pathname.startsWith("/api/ai/") ? 1024 * 1024 : 64 * 1024;
-      if (_bodyBytes > _limit && !res.headersSent) {
-        res.writeHead(413, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: false, error: "请求体过大" }));
-        req.destroy();
+      if (_bodyBytes > _limit && !req.destroyed) {
+        if (!res.headersSent) {
+          res.writeHead(413, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "请求体过大" }));
+        }
+        req.destroy();   // 已经回过 401/429 也要断开, 不再继续读
       }
     });
   }
@@ -1480,7 +1495,17 @@ const server = http.createServer((req, res) => {
     const readBody = (cb) => {
       let body = "";
       req.on("data", (c) => (body += c));
-      req.on("end", () => { let args; try { args = JSON.parse(body || "{}"); } catch { sendJson(400, { ok: false, error: "请求格式错误" }); return; } cb(args); });
+      req.on("end", () => {
+        let args;
+        try { args = JSON.parse(body || "{}"); } catch { sendJson(400, { ok: false, error: "请求格式错误" }); return; }
+        if (!args || typeof args !== "object" || Array.isArray(args)) { sendJson(400, { ok: false, error: "请求格式错误" }); return; }
+        // 处理函数里的任何异常都变成 500, 不让进程退出
+        Promise.resolve().then(() => cb(args)).catch((e) => {
+          console.error("[ai] 请求处理出错:", e && e.message);
+          if (!res.headersSent) sendJson(500, { ok: false, error: "服务器处理出错" });
+          else if (!res.writableEnded) res.end();
+        });
+      });
     };
     const currentData = () => latestData || loadPortfolio();
 
@@ -1492,7 +1517,16 @@ const server = http.createServer((req, res) => {
 
     // 预览: 这次会发给 AI 的数据
     if (urlObj.pathname === "/api/ai/context" && req.method === "POST") {
-      readBody((args) => sendJson(200, { ok: true, text: buildAiContext(currentData(), loadPlan(), { anonymize: args.anonymize !== false }).text }));
+      readBody((args) => {
+        const anonymize = args.anonymize !== false;
+        const notes = aiNotes.read().trim();
+        let text = buildAiContext(currentData(), loadPlan(), { anonymize }).text;
+        if (notes) text += `\n\n## 顾问笔记\n${anonymize ? scrubText(notes) : notes}`;
+        text += anonymize
+          ? "\n\n（AI 需要时还会查交易记录、日记、规则修改记录和收益曲线，同样不带金额、股数、成本价；日记里的数字会隐去。截图导入时，截图本身会发给看图的模型。）"
+          : "\n\n（AI 需要时还会查交易记录、日记、规则修改记录和收益曲线，含金额和股数。）";
+        sendJson(200, { ok: true, text });
+      });
       return;
     }
 
@@ -1509,25 +1543,32 @@ const server = http.createServer((req, res) => {
         const plan = loadPlan();
         const anonymize = args.anonymize !== false;
         const mode = args.mode === "onboard" ? "onboard" : "chat";
-        const system = buildSystem(buildAiContext(currentData(), plan, { anonymize }).text, { notes: aiNotes.read(), mode });
+        const notes = anonymize ? scrubText(aiNotes.read()) : aiNotes.read();
+        const system = buildSystem(buildAiContext(currentData(), plan, { anonymize }).text, { notes, mode });
         const toolset = createToolset({ getData: currentData, getPlan: loadPlan, getJournal: loadJournalFile, getHistory: loadHistory, anonymize });
         res.writeHead(200, { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no", Connection: "keep-alive" });
         const send = (event, data) => { if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
         const ac = new AbortController();
         res.on("close", () => ac.abort());
         let full = "";
+        const collect = () => {
+          // 工具提的建议为主; 不支持工具的模型从文字里的 calm-proposals 代码块兜底
+          const seen = new Set(toolset.proposals.map((p) => p.summary));
+          return [...toolset.proposals, ...extractProposals(full, plan).filter((p) => !seen.has(p.summary))].slice(0, 12);
+        };
         try {
           const r = await runAgent(AI, {
             system, messages: msgs, toolset, signal: ac.signal,
             onText: (t) => { full += t; send("delta", { t }); },
             onTool: (name, input) => send("tool", { name, label: toolset.label(name, input) }),
           });
-          // 工具提的建议为主; 不支持工具的模型从文字里的 calm-proposals 代码块兜底
-          const seen = new Set(toolset.proposals.map((p) => p.summary));
-          const proposals = [...toolset.proposals, ...extractProposals(full, plan).filter((p) => !seen.has(p.summary))].slice(0, 12);
-          send("done", { proposals, stopReason: r && r.stopReason });
+          send("done", { proposals: collect(), stopReason: r && r.stopReason });
         } catch (e) {
-          if (!ac.signal.aborted) send("error", { msg: String((e && e.message) || e).slice(0, 300) });
+          if (!ac.signal.aborted) {
+            console.error("[ai] 对话出错:", e && e.message);
+            send("error", { msg: publicError(e) });
+            send("done", { proposals: collect(), stopReason: "error" });   // 出错前已提出的建议不丢
+          }
         }
         res.end();
       });
@@ -1549,8 +1590,10 @@ const server = http.createServer((req, res) => {
         const images = (Array.isArray(args.images) ? args.images : []).slice(0, 4)
           .filter((i) => i && /^image\/(jpeg|png|webp|gif)$/.test(i.mediaType) && typeof i.data === "string" && i.data.length < 6 * 1024 * 1024);
         if (!images.length) { sendJson(400, { ok: false, error: "请选择 1–4 张截图" }); return; }
-        try { sendJson(200, { ok: true, rows: await extractHoldings(AI, images) }); }
-        catch (e) { sendJson(502, { ok: false, error: String(e.message || e).slice(0, 300) }); }
+        const ac = new AbortController();
+        res.on("close", () => { if (!res.writableEnded) ac.abort(); });
+        try { sendJson(200, { ok: true, rows: await extractHoldings(AI, images, { signal: ac.signal }) }); }
+        catch (e) { console.error("[ai] 截图识别出错:", e && e.message); sendJson(502, { ok: false, error: publicError(e) }); }
       });
       return;
     }
@@ -1587,6 +1630,7 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       let args;
       try { args = JSON.parse(body || "{}"); } catch { res.writeHead(400); res.end("请求格式错误"); return; }
+      if (!args || typeof args !== "object" || Array.isArray(args)) { res.writeHead(400); res.end("请求格式错误"); return; }
       const plan = JSON.parse(JSON.stringify(loadPlan() || {}));
       const r = applySymbolRule(plan, args.symbol, args.rule === undefined ? null : args.rule, { reason: args.reason, source: "page" });
       if (r.error) { res.writeHead(400); res.end(r.error); return; }
@@ -1742,12 +1786,13 @@ const server = http.createServer((req, res) => {
     req.on("data", (c) => (body += c));
     req.on("end", () => {
       try {
-        const { accountIndex, rows, apply } = JSON.parse(body || "{}");
+        const { accountIndex, accountName, rows, apply } = JSON.parse(body || "{}") || {};
         const p = loadPortfolio();
-        const acc = p.accounts && p.accounts[accountIndex];
+        const acc = Number.isInteger(accountIndex) && accountIndex >= 0 ? p.accounts && p.accounts[accountIndex] : null;
         if (!acc) { res.writeHead(400); res.end("账户不存在"); return; }
+        if (accountName !== undefined && acc.name !== accountName) { res.writeHead(409); res.end("账户列表变了，请重新选择账户"); return; }
         if (!Array.isArray(rows) || !rows.length || rows.length > 500) { res.writeHead(400); res.end("没有可导入的行(或超过 500 行)"); return; }
-        const clean = rows.map((r) => ({ symbol: String(r.symbol || "").trim().toUpperCase(), name: String(r.name || "").slice(0, 60), qty: Number(r.qty), cost: Number(r.cost) }))
+        const clean = rows.map((r) => ({ symbol: String(r.symbol || "").trim().toUpperCase(), name: cleanName(r.name), qty: Number(r.qty), cost: Number(r.cost) }))
           .filter((r) => /^[A-Z0-9.\-]{1,15}$/.test(r.symbol) && r.qty > 0 && r.cost >= 0);
         const plan = planImport(acc, clean);
         if (apply) {
@@ -2873,12 +2918,15 @@ function withHardTimeout(promise, ms) {
   if (!TEST_MODE || process.env.STOCK_TEST_KLINES === "1") setTimeout(refreshKlinesLoop, 15 * 1000);
 
   // AI 建议冷静期: 每分钟把到期的待生效建议写进 plan.json
-  if (AI.enabled && AI_COOLDOWN_HOURS > 0) {
+  // 队列里有东西就处理(哪怕后来把冷静期改成了 0), 免得卡住
+  if (AI.enabled) {
     const t = setInterval(() => {
-      aiPending.takeDue().forEach((item) => {
-        try { applyAiProposals(item.proposals, item.reason); console.log(`[ai] 待生效建议已应用(${item.proposals.length} 条)`); }
-        catch (e) { console.error("[ai] 应用待生效建议失败:", e.message); }
-      });
+      aiPending.processDue((item) => {
+        const results = applyAiProposals(item.proposals, item.reason);
+        const skipped = item.proposals.length - results.filter((r) => r.ok).length;
+        console.log(`[ai] 待生效建议已处理: 写入 ${results.filter((r) => r.ok).length} 条${skipped ? `, ${skipped} 条到期时已无效或和现状相同, 跳过` : ""}`);
+        return results;
+      }).forEach((d) => { if (d.error) console.error("[ai] 应用待生效建议失败, 下次再试:", d.error); });
     }, 60 * 1000);
     if (t.unref) t.unref();
   }

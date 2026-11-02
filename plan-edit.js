@@ -37,7 +37,7 @@ function pushChangelog(plan, change, reason, source) {
   plan.changelog = Array.isArray(plan.changelog) ? plan.changelog : [];
   const now = new Date();
   plan.changelog.push({
-    version: `${source === "ai" ? "AI" : "页面"}-${now.toISOString().slice(0, 10)}`, date: now.toISOString(),
+    version: `${source === "ai" ? "AI" : "页面"}-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`, date: now.toISOString(),
     changes: [change], reason: String(reason || "").trim().slice(0, 200), ...(source === "ai" ? { source: "ai" } : {}), objections: [],
   });
 }
@@ -79,7 +79,8 @@ function validateAllocation(change) {
   for (const k of Object.keys(ALLOC_FIELDS)) {
     if (change[k] === undefined || change[k] === null || change[k] === "") continue;
     const n = Number(change[k]);
-    if (!(n >= 0 && n <= 100)) return { error: `${ALLOC_FIELDS[k]}需在 0–100 之间` };
+    // 必须大于 0: 页面和判断逻辑把 0 当成"没设"而用默认值, 允许 0 会出现"写着 0、实际按 40 判断"
+    if (!(n > 0 && n <= 100)) return { error: `${ALLOC_FIELDS[k]}需在 1–100 之间` };
     out[k] = n;
   }
   if (!Object.keys(out).length) return { error: "没有要改的结构目标" };
@@ -93,7 +94,10 @@ function applyAllocation(plan, rawChange, { reason = "", source = "page" } = {})
   plan.channels = plan.channels || {};
   const parts = [];
   Object.entries(v.change).forEach(([k, n]) => {
-    if (cur[k] === n) return;
+    // 个股上限在两个字段里各存一份(纪律页读 targetAllocation, 可加/封仓读 channels): 任一不一致都要写
+    const drift = k === "stockCapPct" && (plan.targetAllocation.stockCapPct !== n || plan.channels.stockBucketCapPct !== n);
+    if (cur[k] === n && !drift) return;
+    if (cur[k] === n && drift) { plan.targetAllocation.stockCapPct = n; plan.channels.stockBucketCapPct = n; return; }
     if (k === "observationCapPct") plan.channels.observationCapPct = n;
     else plan.targetAllocation[k] = n;
     if (k === "stockCapPct") plan.channels.stockBucketCapPct = n;   // 纪律页和「可加/封仓」签用同一个上限

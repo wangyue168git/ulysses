@@ -9,6 +9,17 @@ const fmtPct = (n) => (Number.isFinite(n) ? `${n.toFixed(1)}%` : "—");
 const fmtCny = (n) => `¥${Math.round(n).toLocaleString("en-US")}`;
 const fmtCap = (n) => (n === null || n === undefined ? "未设" : `${n}%`);
 // 只发比例时, 把判断说明里的股数、金额换成完成度(规则说明是用户自己写的文字, 预览里能看到)
+// 通用脱敏(只发比例时用于所有文字: 规则说明、修改记录、原则、交易备注): 股数 → [股数], 带货币/单位的金额 → [金额], 百分比保留
+function scrubText(s) {
+  return scrubAmounts(s)
+    .replace(/(HK\$|US\$|\$|¥|￥|USD|HKD|CNY|RMB)\s?[\d,]+(\.\d+)?\s*(万|w|k|元)?/gi, "[金额]")
+    .replace(/[\d,]+(\.\d+)?\s*(万元|万|元|美元|港币|港元|块|w(?![a-z]))/gi, "[金额]")
+    .replace(/[\d,]+(\.\d+)?\s*(股|份|shares?\b)/gi, "[股数]");
+}
+// 自由文本(日记)更严: 再把两位以上的数字都隐去, 只留百分比和年份
+function scrubFree(s) {
+  return scrubText(s).replace(/\d[\d,]*(\.\d+)?(?!\s*%)/g, (m) => (m.length < 2 || /^(19|20)\d{2}$/.test(m) ? m : "[数字]"));
+}
 function scrubAmounts(s) {
   return String(s || "")
     .replace(/已买够 [\d.]+\/[\d.]+ 股/g, "已买够目标股数")
@@ -67,7 +78,7 @@ function computeRows(data, plan, { anonymize = true } = {}) {
     .reduce((s, a) => s + (a.holdings || []).filter((h) => h.market !== "crypto").reduce((t, h) => t + (Number(h.marketValue) || 0) * mul(a.currency || "CNY"), 0), 0);
   rows.forEach((x) => {
     const r = evaluateChannel(ch, x.symbol, { weightPct: x.weight, stockPct: stock, offshoreCNY, usdCny: rate, price: x.price, iopv: x.h.iopv || 0, shares: x.shares });
-    x.channel = r ? `${r.label}（${anonymize ? scrubAmounts(r.why) : r.why}）` : "—";
+    x.channel = r ? `${r.label}（${anonymize ? scrubText(r.why) : r.why}）` : "—";
   });
 
   return { rows, bySym, total, cash, nasdaq, sp, stock, observation, crypto, cashPct, ch, symRules };
@@ -92,11 +103,11 @@ function buildAiContext(data, plan, { anonymize = true, now = new Date() } = {})
     const parts = [`${x.symbol} ${x.name !== x.symbol ? x.name : ""}`.trim(), `分组 ${x.group === x.name ? "个股" : x.group}`, `占比 ${fmtPct(x.weight)}`];
     if (x.pnlPct !== null) parts.push(`浮盈亏 ${x.pnlPct >= 0 ? "+" : ""}${x.pnlPct.toFixed(1)}%`);
     if (!anonymize) parts.push(`${+x.shares.toFixed(4)} 股`, `市值 ${fmtCny(x.valueCNY)}`);
-    const ruleText = x.rule ? (anonymize ? scrubAmounts(describeRule(x.rule)) : describeRule(x.rule)) : "";
+    const ruleText = x.rule ? (anonymize ? scrubText(describeRule(x.rule)) : describeRule(x.rule)) : "";
     parts.push(`规则：${x.rule ? ruleText + (x.rule.type === "premium" ? `（溢价 ≤${x.rule.maxPremiumPct}%）` : "") : "未写（按默认 " + (ch.default === "open" ? "可加" : "封仓") + "）"}`);
     if (x.rule && x.rule.targetShares) parts.push(`目标股数完成 ${Math.min(999, (x.shares / x.rule.targetShares) * 100).toFixed(0)}%`);
     parts.push(`当前：${x.channel}`);
-    if (x.rule && x.rule.why) parts.push(`规则说明：${x.rule.why}`);
+    if (x.rule && x.rule.why) parts.push(`规则说明：${anonymize ? scrubText(x.rule.why) : x.rule.why}`);
     L.push(`- ${parts.join("；")}`);
   });
   const noRule = rows.filter((x) => !x.rule).map((x) => x.symbol);
@@ -104,7 +115,7 @@ function buildAiContext(data, plan, { anonymize = true, now = new Date() } = {})
   L.push("");
   L.push("## 规则覆盖");
   L.push(`- 持有但没写规则：${noRule.length ? noRule.join("、") : "无"}`);
-  L.push(`- 写了规则但没持有：${unheld.length ? unheld.map((s) => `${s}（${anonymize ? scrubAmounts(describeRule(symRules[s])) : describeRule(symRules[s])}）`).join("、") : "无"}`);
+  L.push(`- 写了规则但没持有：${unheld.length ? unheld.map((s) => `${s}（${anonymize ? scrubText(describeRule(symRules[s])) : describeRule(symRules[s])}）`).join("、") : "无"}`);
   const ip = ch.indexPlan || {};
   if (ip.symbols) L.push(anonymize
     ? `- 每月指数定投：${ip.symbols.join("/")} 任选，设了每月目标金额`
@@ -113,16 +124,18 @@ function buildAiContext(data, plan, { anonymize = true, now = new Date() } = {})
   if (creed.length || plan.rules) {
     L.push("");
     L.push("## 用户自己写的原则");
-    creed.forEach((c) => L.push(`- ${c}`));
-    Object.entries(plan.rules || {}).filter(([k]) => !k.startsWith("_")).forEach(([k, v]) => L.push(`- ${k}：${v}`));
+    const t = (v) => (anonymize ? scrubText(String(v)) : String(v));
+    creed.forEach((c) => L.push(`- ${t(c)}`));
+    Object.entries(plan.rules || {}).filter(([k]) => !k.startsWith("_")).forEach(([k, v]) => L.push(`- ${k}：${t(v)}`));
   }
   const log = Array.isArray(plan.changelog) ? plan.changelog.slice(-5) : [];
   if (log.length) {
     L.push("");
     L.push("## 最近的规则修改");
-    log.forEach((e) => L.push(`- ${e.version || ""}：${(e.changes || []).join("；")}${e.reason ? `（理由：${e.reason}）` : ""}`));
+    const t = (v) => (anonymize ? scrubText(String(v)) : String(v));
+    log.forEach((e) => L.push(`- ${e.version || ""}：${t([].concat(e.changes || []).join("；"))}${e.reason ? `（理由：${t(e.reason)}）` : ""}`));
   }
   return { text: L.join("\n"), facts: { total, stockPct: stock, indexPct: nasdaq + sp, observationPct: observation, holdings: rows.length } };
 }
 
-module.exports = { buildAiContext, computeRows, scrubAmounts };
+module.exports = { buildAiContext, computeRows, scrubAmounts, scrubText, scrubFree };

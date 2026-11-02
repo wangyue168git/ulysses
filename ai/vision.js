@@ -17,20 +17,23 @@ function parseRows(text) {
   const num = (v) => { const n = parseFloat(String(v ?? "").replace(/[,，\s$¥￥]/g, "")); return Number.isFinite(n) ? n : null; };
   return arr.slice(0, 200).map((r) => ({
     symbol: String((r && r.symbol) || "").trim().toUpperCase().replace(/\.(US|HK|SH|SZ|SS)$/, "").replace(/^(SH|SZ|HK)(?=\d)/, ""),
-    name: String((r && r.name) || "").trim().slice(0, 40),
+    name: String((r && r.name) || "").replace(/[<>"'`]/g, "").trim().slice(0, 40),
     qty: num(r && r.qty), cost: num(r && r.cost),
   })).filter((r) => r.symbol || r.name);
 }
 
+const { withTimeout, TIMEOUT_MS } = require("./timeout");
 // images: [{ mediaType: "image/jpeg", data: "<base64>" }]
 async function extractHoldings(cfg0, images, { signal } = {}) {
   const other = !!(cfg0.visionProvider || cfg0.visionBaseUrl);
+  // 视觉模型在另一家平台时必须单独配 Key, 不能把主模型的 Key 发给别家
+  if (other && !cfg0.visionApiKey && (cfg0.visionProvider || cfg0.provider) !== "mock") throw new Error("视觉模型在另一家平台, 请设置 AI_VISION_API_KEY");
   const cfg = other ? { ...cfg0, provider: cfg0.visionProvider || cfg0.provider, baseUrl: cfg0.visionBaseUrl, apiKey: cfg0.visionApiKey || cfg0.apiKey } : cfg0;
   const model = cfg.visionModel || cfg.model;
   let text = "";
   if (cfg.provider === "anthropic") {
     const Anthropic = require("@anthropic-ai/sdk").default;
-    const client = new Anthropic({ apiKey: cfg.apiKey, ...(cfg.baseUrl ? { baseURL: cfg.baseUrl } : {}) });
+    const client = new Anthropic({ apiKey: cfg.apiKey, timeout: TIMEOUT_MS, maxRetries: 1, ...(cfg.baseUrl ? { baseURL: cfg.baseUrl } : {}) });
     const params = {
       model, max_tokens: 8000,
       messages: [{ role: "user", content: [
@@ -45,8 +48,9 @@ async function extractHoldings(cfg0, images, { signal } = {}) {
     text = resp.content.filter((b) => b.type === "text").map((b) => b.text).join("");
   } else if (cfg.provider === "openai") {
     const base = cfg.baseUrl || "https://api.openai.com/v1";
+    const tm = withTimeout(signal);
     const res = await fetch(`${base}/chat/completions`, {
-      method: "POST", signal,
+      method: "POST", signal: tm.signal,
       headers: { "Content-Type": "application/json", ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}) },
       body: JSON.stringify({ model, max_tokens: 8000, messages: [{ role: "user", content: [
         { type: "text", text: VISION_PROMPT },
@@ -55,11 +59,12 @@ async function extractHoldings(cfg0, images, { signal } = {}) {
     });
     if (!res.ok) {
       const t = await res.text().catch(() => "");
+      tm.done();
       throw new Error(/image|vision|multimodal|content type|image_url/i.test(t)
         ? `模型 ${model} 看不了图片, 请在 .env 设置 AI_VISION_MODEL 为支持图片的模型`
         : `模型接口 HTTP ${res.status}${t ? ": " + t.slice(0, 200) : ""}`);
     }
-    const j = await res.json();
+    const j = await res.json().finally(tm.done);
     text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
     if (Array.isArray(text)) text = text.map((p) => p.text || "").join("");
   } else if (cfg.provider === "mock") {

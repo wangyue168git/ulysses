@@ -29,10 +29,10 @@ const deps = (anonymize = true) => ({ getData: () => data, getPlan: () => plan, 
 test("读数据工具: 只发比例时不含股数/金额; 收益扣除新增投入; 回撤按曲线算", () => {
   const t = createToolset(deps());
   const tx = JSON.parse(t.run("get_transactions", { symbol: "aapl" }).content);
-  assert.deepEqual(tx.map((x) => [x.date, x.type, x.price, x.shares]), [["2026-02-01", "买入", 140, undefined], ["2026-06-01", "买入", 165, undefined]]);
-  assert.equal(tx[1].note, "追加 4 股", "备注里的股数也会被处理(这里不是固定格式, 保留原样)");
+  assert.deepEqual(tx.map((x) => [x.date, x.type, x.price, x.shares, x.note, x.priceVsNowPct]), [["2026-02-01", "买入", undefined, undefined, undefined, -30], ["2026-06-01", "买入", undefined, undefined, undefined, -17.5]],
+    "只发比例: 不发价格/股数/备注, 只给成交价相对现价的百分比");
   assert.equal(JSON.parse(createToolset(deps(false)).run("get_transactions", { symbol: "AAPL" }).content)[0].shares, 6);
-  assert.match(t.run("get_journal", { symbol: "AAPL" }).content, /买了 \[已隐去\]，花了 \[已隐去\]，看好生态/);
+  assert.match(t.run("get_journal", { symbol: "AAPL" }).content, /买了 \[股数\]，花了 \[金额\]，看好生态/);
   assert.match(t.run("get_rule_history", {}).content, /初始/);
   const perf = JSON.parse(t.run("get_performance", { range: "all" }).content);
   assert.equal(perf.returnPctExInflow, 20);   // (130000-100000-10000)/100000

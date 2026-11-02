@@ -3,6 +3,7 @@
 //   anthropic: 官方 SDK 流式手动循环 —— 每轮把完整 content(含思考块)原样追加; 工具输入先校验再执行; 截断/拒答时不执行工具
 //   openai:    /chat/completions 的 function calling(流式拼接 tool_calls)
 //   mock:      测试用, 按 AI_MOCK_SCRIPT 回放
+const { withTimeout, TIMEOUT_MS } = require("./timeout");
 const MAX_STEPS = 8;
 
 function joiner(onText) {
@@ -16,7 +17,7 @@ function joiner(onText) {
 
 async function anthropicLoop(cfg, { system, messages, toolset, onText, onTool, signal }) {
   const Anthropic = require("@anthropic-ai/sdk").default;
-  const client = new Anthropic({ apiKey: cfg.apiKey, ...(cfg.baseUrl ? { baseURL: cfg.baseUrl } : {}) });
+  const client = new Anthropic({ apiKey: cfg.apiKey, timeout: TIMEOUT_MS, maxRetries: 1, ...(cfg.baseUrl ? { baseURL: cfg.baseUrl } : {}) });
   // 流式 + 自定义工具: 打开 eager_input_streaming; 服务端因此不再校验输入, 我们在 toolset.run 里校验
   const tools = toolset.defs.map((d) => ({ name: d.name, description: d.description, input_schema: d.schema, eager_input_streaming: true }));
   const msgs = messages.map((m) => ({ role: m.role, content: m.content }));
@@ -65,13 +66,18 @@ async function openaiLoop(cfg, { system, messages, toolset, onText, onTool, sign
   const out = joiner(onText);
   let useTools = tools.length > 0, stopReason = null;
   for (let step = 0; step < MAX_STEPS; step++) {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: "POST", signal,
-      headers: { "Content-Type": "application/json", ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}) },
-      body: JSON.stringify({ model: cfg.model, stream: true, max_tokens: cfg.maxTokens, messages: msgs, ...(useTools ? { tools } : {}) }),
-    });
+    const tm = withTimeout(signal);
+    let res;
+    try {
+      res = await fetch(`${base}/chat/completions`, {
+        method: "POST", signal: tm.signal,
+        headers: { "Content-Type": "application/json", ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}) },
+        body: JSON.stringify({ model: cfg.model, stream: true, max_tokens: cfg.maxTokens, messages: msgs, ...(useTools ? { tools } : {}) }),
+      });
+    } catch (e) { tm.done(); throw (tm.signal.reason instanceof Error && !(signal && signal.aborted)) ? tm.signal.reason : e; }
     if (!res.ok) {
       const t = await res.text().catch(() => "");
+      tm.done();
       // 有些模型不支持工具调用: 第一轮失败时去掉工具重试一次(建议仍可从文字里的 calm-proposals 代码块提取)
       if (useTools && step === 0 && res.status === 400 && /tool|function/i.test(t)) { useTools = false; step--; continue; }
       throw new Error(`模型接口 HTTP ${res.status}${t ? ": " + t.slice(0, 200) : ""}`);
@@ -93,15 +99,18 @@ async function openaiLoop(cfg, { system, messages, toolset, onText, onTool, sign
         if (!c) continue;
         if (c.delta && c.delta.content) { text += c.delta.content; out.text(c.delta.content); }
         ((c.delta && c.delta.tool_calls) || []).forEach((tc) => {
-          const i = tc.index ?? 0;
+          // 有 index 按 index 拼; 有的服务只给 id 不给 index, 按 id 找; 都没有就接在最后一个上
+          let i = Number.isInteger(tc.index) ? tc.index : (tc.id ? calls.findIndex((x) => x && x.id === tc.id) : calls.length - 1);
+          if (i < 0) i = calls.length;
           const x = calls[i] || (calls[i] = { id: "", name: "", args: "" });
           if (tc.id) x.id = tc.id;
-          if (tc.function && tc.function.name) x.name += tc.function.name;
+          if (tc.function && tc.function.name && !x.name) x.name = tc.function.name;   // 有的服务每片都带完整名字, 只取一次
           if (tc.function && tc.function.arguments) x.args += tc.function.arguments;
         });
         if (c.finish_reason) stopReason = c.finish_reason;
       }
     }
+    tm.done();
     const real = calls.filter(Boolean).filter((x) => x.name);
     if (!real.length) { if (stopReason === "length") { out.gap(); out.text("（回答太长被截断了。）"); } break; }
     if (stopReason === "length") { out.gap(); out.text("（回答太长被截断了。）"); break; }

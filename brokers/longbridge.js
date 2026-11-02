@@ -50,14 +50,19 @@ function createLongbridgeAdapter({ appKey, appSecret, accessToken, tokenExpires 
     async fetchPositions() {
       try {
         const resp = await (await ctx()).stockPositions();
-        const positions = [];
+        // 同一只股票可能出现在多个子账户(channel)里: 按「写进看板的账户 + 代码」合并, 成本按股数加权
+        const merged = new Map();
         (resp.channels || []).forEach((ch) => (ch.positions || []).forEach((p) => {
           const b = toBoardSymbol(p.symbol);
           const qty = dec(p.quantity), cost = dec(p.costPrice);
           if (!b || !(qty > 0) || !(cost > 0)) return;
-          positions.push({ key: `${ch.accountChannel || ""}:${p.symbol}`, symbol: b.symbol, market: b.market, name: p.symbolName || b.symbol, qty, cost, account: accountOf(b.region) });
+          const account = accountOf(b.region);
+          const key = `${account || ""}:${b.symbol}`;
+          const x = merged.get(key);
+          if (x) { x.cost = (x.cost * x.qty + cost * qty) / (x.qty + qty); x.qty += qty; }
+          else merged.set(key, { key, symbol: b.symbol, market: b.market, name: p.symbolName || b.symbol, qty, cost, account });
         }));
-        return { positions };
+        return { positions: [...merged.values()] };
       } catch (e) { throw e.hard ? e : wrapErr(e); }
     },
     async fetchConfirms() {
@@ -70,7 +75,8 @@ function createLongbridgeAdapter({ appKey, appSecret, accessToken, tokenExpires 
           const b = toBoardSymbol(x.symbol);
           const side = sideOf.get(String(x.orderId));
           const qty = dec(x.quantity), price = dec(x.price);
-          if (!b || !(side === 1 || side === 2) || !(qty > 0) || !(price > 0)) return;
+          // 只要股票: 期权/窝轮等代码转换不出合规的看板代码, 直接跳过(持仓对账也只看股票)
+          if (!b || !/^[A-Z0-9.\-]{1,15}$/.test(b.symbol) || !(side === 1 || side === 2) || !(qty > 0) || !(price > 0)) return;
           const date = x.tradeDoneAt instanceof Date ? x.tradeDoneAt : new Date(x.tradeDoneAt);
           out.push({ id: String(x.tradeId || `${x.orderId}-${+date}`), symbol: b.symbol, market: b.market, side: side === 1 ? "buy" : "sell", qty, price, commission: 0, date, account: accountOf(b.region) });
         });

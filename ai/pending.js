@@ -18,7 +18,23 @@ function createPendingStore(file) {
       if (next.length === list.length) return false;
       save(next); return true;
     },
-    // 取出到期的(并从队列里移除), 交给调用方去应用
+    // 到期的逐条交给 apply(item); apply 成功才从队列里删, 失败的留着并记下错误, 下次再试
+    processDue(apply, now = new Date()) {
+      const done = [];
+      for (const item of load().filter((x) => new Date(x.dueAt) <= now)) {
+        try {
+          const results = apply(item);
+          const list = load().filter((x) => x.id !== item.id); save(list);
+          done.push({ id: item.id, results });
+        } catch (e) {
+          const list = load(); const x = list.find((y) => y.id === item.id);
+          if (x) { x.lastError = String(e.message || e).slice(0, 200); x.lastTriedAt = now.toISOString(); save(list); }
+          done.push({ id: item.id, error: String(e.message || e) });
+        }
+      }
+      return done;
+    },
+    // 兼容旧调用: 取出到期的并删除
     takeDue(now = new Date()) {
       const list = load();
       const due = list.filter((x) => new Date(x.dueAt) <= now);
