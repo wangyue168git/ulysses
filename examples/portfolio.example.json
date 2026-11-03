@@ -1,23 +1,196 @@
 {
   "_note": "演示用的虚构持仓。以 DEMO=1 首次启动时会复制到数据目录; 正式使用请在页面里自己添加账户和持仓。",
-  "exchangeRate": { "USD_CNY": 7.1 },
+  "exchangeRate": {
+    "USD_CNY": 7.1
+  },
   "accounts": [
     {
-      "name": "IB", "currency": "USD", "cash": 500, "holdings": [
-        { "symbol": "VOO", "name": "标普500 VOO", "market": "nyse", "shares": 30, "costPrice": 480, "transactions": [{ "type": "sync", "shares": 30, "price": 480, "date": "2025-01-02T00:00:00.000Z" }] },
-        { "symbol": "QQQM", "name": "纳指100 QQQM", "market": "nasdaq", "shares": 60, "costPrice": 190, "transactions": [{ "type": "sync", "shares": 60, "price": 190, "date": "2025-01-02T00:00:00.000Z" }] },
-        { "symbol": "AAPL", "name": "苹果", "market": "nasdaq", "shares": 12, "costPrice": 210, "transactions": [{ "type": "sync", "shares": 12, "price": 210, "date": "2025-01-02T00:00:00.000Z" }] },
-        { "symbol": "MSFT", "name": "微软", "market": "nasdaq", "shares": 2, "costPrice": 420, "transactions": [{ "type": "sync", "shares": 2, "price": 420, "date": "2025-03-03T00:00:00.000Z" }] }
+      "name": "IB",
+      "currency": "USD",
+      "cash": 500,
+      "holdings": [
+        {
+          "symbol": "VOO",
+          "name": "标普500 VOO",
+          "market": "nyse",
+          "shares": 30,
+          "costPrice": 480,
+          "transactions": [
+            {
+              "type": "sync",
+              "shares": 19,
+              "price": 450,
+              "date": "2025-10-02T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 20,
+              "price": 470,
+              "date": "2025-11-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 21,
+              "price": 478,
+              "date": "2025-12-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 22,
+              "price": 485,
+              "date": "2026-01-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 23,
+              "price": 490,
+              "date": "2026-02-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 24,
+              "price": 500,
+              "date": "2026-04-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 25,
+              "price": 505,
+              "date": "2026-05-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 26,
+              "price": 515,
+              "date": "2026-07-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 27,
+              "price": 522,
+              "date": "2026-08-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 28,
+              "price": 530,
+              "date": "2026-09-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 29,
+              "price": 540,
+              "date": "2026-10-10T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 30,
+              "price": 548,
+              "date": "2026-10-24T00:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "symbol": "QQQM",
+          "name": "纳指100 QQQM",
+          "market": "nasdaq",
+          "shares": 60,
+          "costPrice": 190,
+          "transactions": [
+            {
+              "type": "sync",
+              "shares": 58,
+              "price": 185,
+              "date": "2025-10-02T00:00:00.000Z"
+            },
+            {
+              "type": "sync",
+              "shares": 60,
+              "price": 230,
+              "date": "2026-03-10T00:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "symbol": "AAPL",
+          "name": "苹果",
+          "market": "nasdaq",
+          "shares": 12,
+          "costPrice": 210,
+          "transactions": [
+            {
+              "type": "sync",
+              "shares": 8,
+              "price": 190,
+              "date": "2025-10-02T00:00:00.000Z"
+            },
+            {
+              "type": "buy",
+              "shares": 4,
+              "price": 225,
+              "date": "2026-04-08T00:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "symbol": "MSFT",
+          "name": "微软",
+          "market": "nasdaq",
+          "shares": 2,
+          "costPrice": 420,
+          "transactions": [
+            {
+              "type": "buy",
+              "shares": 2,
+              "price": 420,
+              "date": "2026-02-18T00:00:00.000Z"
+            }
+          ]
+        }
       ]
     },
     {
-      "name": "A股账户", "currency": "CNY", "cash": 3000, "holdings": [
-        { "symbol": "513500", "name": "标普500ETF", "market": "sh", "shares": 20000, "costPrice": 1.75, "transactions": [{ "type": "sync", "shares": 20000, "price": 1.75, "date": "2025-01-02T00:00:00.000Z" }] }
+      "name": "A股账户",
+      "currency": "CNY",
+      "cash": 3000,
+      "holdings": [
+        {
+          "symbol": "513500",
+          "name": "标普500ETF",
+          "market": "sh",
+          "shares": 20000,
+          "costPrice": 1.75,
+          "transactions": [
+            {
+              "type": "sync",
+              "shares": 20000,
+              "price": 1.75,
+              "date": "2025-01-02T00:00:00.000Z"
+            }
+          ]
+        }
       ]
     },
     {
-      "name": "加密货币", "currency": "USD", "cash": 0, "holdings": [
-        { "symbol": "ETH", "name": "以太坊", "market": "crypto", "shares": 0.5, "costPrice": 2500, "transactions": [{ "type": "sync", "shares": 0.5, "price": 2500, "date": "2025-02-03T00:00:00.000Z" }] }
+      "name": "加密货币",
+      "currency": "USD",
+      "cash": 0,
+      "holdings": [
+        {
+          "symbol": "ETH",
+          "name": "以太坊",
+          "market": "crypto",
+          "shares": 0.5,
+          "costPrice": 2500,
+          "transactions": [
+            {
+              "type": "sync",
+              "shares": 0.5,
+              "price": 2500,
+              "date": "2025-02-03T00:00:00.000Z"
+            }
+          ]
+        }
       ]
     }
   ]

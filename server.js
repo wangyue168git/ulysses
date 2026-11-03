@@ -86,14 +86,41 @@ const DATA_DIR = path.resolve(process.env.DATA_DIR || process.env.STOCK_DATA_DIR
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 const PORTFOLIO_FILE = path.join(DATA_DIR, "portfolio.json");
 // 演示模式: DEMO=1 且数据目录还没有持仓时, 用 examples/ 里的虚构持仓做初始数据
+// 演示数据里的交易和规则修改按整月平移, 让最后一笔落在上个月: 演示站放多久, 看到的都是「最近一年」
+function demoMonthShift() {
+  try {
+    const p = JSON.parse(fs.readFileSync(path.join(__dirname, "examples", "portfolio.example.json"), "utf8"));
+    const last = Math.max(...p.accounts.flatMap((a) => a.holdings.flatMap((h) => (h.transactions || []).map((t) => +new Date(t.date)))));
+    const d = new Date(last), now = new Date();
+    return Math.max(0, (now.getFullYear() * 12 + now.getMonth() - 1) - (d.getFullYear() * 12 + d.getMonth()));
+  } catch (e) { return 0; }
+}
+function shiftMonths(iso, n) {
+  const d = new Date(iso);
+  if (!n || isNaN(d)) return iso;
+  const day = d.getUTCDate();
+  d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n);
+  d.setUTCDate(Math.min(day, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()));
+  return d.toISOString();
+}
 if (process.env.DEMO === "1" && !fs.existsSync(PORTFOLIO_FILE)) {
-  try { fs.copyFileSync(path.join(__dirname, "examples", "portfolio.example.json"), PORTFOLIO_FILE); console.log("[ulysses] 演示模式: 已载入示例持仓"); }
-  catch (e) { console.error("示例持仓载入失败:", e.message); }
+  try {
+    const n = demoMonthShift();
+    const p = JSON.parse(fs.readFileSync(path.join(__dirname, "examples", "portfolio.example.json"), "utf8"));
+    p.accounts.forEach((a) => a.holdings.forEach((h) => (h.transactions || []).forEach((t) => { t.date = shiftMonths(t.date, n); })));
+    fs.writeFileSync(PORTFOLIO_FILE, JSON.stringify(p, null, 2));
+    console.log("[ulysses] 演示模式: 已载入示例持仓");
+  } catch (e) { console.error("示例持仓载入失败:", e.message); }
 }
 // 演示模式也载入一份「用到全部功能」的演示规则(新手示例 plan.example.json 只保留常用的)
 if (process.env.DEMO === "1" && !fs.existsSync(path.join(DATA_DIR, "plan.json"))) {
-  try { fs.copyFileSync(path.join(__dirname, "examples", "plan.demo.json"), path.join(DATA_DIR, "plan.json")); console.log("[ulysses] 演示模式: 已载入演示规则"); }
-  catch (e) { console.error("演示规则载入失败:", e.message); }
+  try {
+    const n = demoMonthShift();
+    const plan = JSON.parse(fs.readFileSync(path.join(__dirname, "examples", "plan.demo.json"), "utf8"));
+    (plan.changelog || []).forEach((c) => { if (c.date) c.date = shiftMonths(c.date, n); });
+    fs.writeFileSync(path.join(DATA_DIR, "plan.json"), JSON.stringify(plan, null, 1) + "\n");
+    console.log("[ulysses] 演示模式: 已载入演示规则");
+  } catch (e) { console.error("演示规则载入失败:", e.message); }
 }
 const HISTORY_FILE = path.join(DATA_DIR, "history.json");
 const HISTORY_JOURNAL_FILE = path.join(DATA_DIR, "history.journal");
@@ -491,11 +518,14 @@ loadPlan();
 // 只把加盐哈希存进 DATA_DIR/auth.json(下次启动沿用)。想换密码: 设 APP_PASSWORD, 或删掉 auth.json 重启。
 const AUTH_FILE = path.join(DATA_DIR, "auth.json");
 const PUBLIC_READ = process.env.PUBLIC_READ === "1";   // 默认读取持仓也要登录; 设为 1 才允许匿名只读
+// 浏览器版(web/ 打包, 数据只在自己浏览器里): 单人使用, 不需要登录
+const LOCAL_MODE = process.env.ULYSSES_LOCAL === "1" && typeof window !== "undefined";   // 只在浏览器里生效, 服务器上误设也不会关掉登录
 const validTokens = new Set();
 const TRUST_PROXY = process.env.TRUST_PROXY === "1";
 const scryptHash = (pwd, salt) => crypto.scryptSync(String(pwd), salt, 32).toString("hex");
 let AUTH = null;   // { salt, hash }
 function initAuth() {
+  if (LOCAL_MODE) return;
   const make = (pwd) => { const salt = crypto.randomBytes(16).toString("hex"); return { salt, hash: scryptHash(pwd, salt) }; };
   if (TEST_MODE && process.env.STOCK_TEST_PASSWORD) { AUTH = make(process.env.STOCK_TEST_PASSWORD); return; }
   if (process.env.APP_PASSWORD) { AUTH = make(process.env.APP_PASSWORD); return; }
@@ -524,6 +554,7 @@ function generateToken() {
 }
 
 function checkAuth(req) {
+  if (LOCAL_MODE) return true;
   const token = req.headers["x-auth-token"];
   return !!token && validTokens.has(token);
 }
@@ -832,6 +863,24 @@ function compactHistory(snapshots) {
   return out.length > HISTORY_HARD_CAP ? out.slice(-HISTORY_HARD_CAP) : out;
 }
 
+// 演示模式: 历史为空时, 在第一个真实快照之前补两年虚构的日线(终点对齐当前真实总额), 免得走势图一片空白
+function demoHistory(v, c, r, now) {
+  let seed = 20260101;
+  const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const gauss = () => Math.sqrt(-2 * Math.log(rand() || 1e-9)) * Math.cos(2 * Math.PI * rand());
+  const DAYS = 730, out = [], walk = [0];
+  for (let i = 1; i <= DAYS; i++) walk.push(walk[i - 1] + 0.0004 + 0.011 * gauss());
+  const target = c > 0 ? v / c - 1 : 0;
+  for (let i = 0; i < DAYS; i++) {
+    const t = now - (DAYS - i) * 86400000;
+    const frac = i / DAYS;
+    const cost = c * (0.45 + 0.55 * Math.floor(frac * 24) / 24);          // 每月定投, 成本阶梯上升
+    const g = walk[i] + (target - walk[DAYS]) * frac;                      // 随机游走, 终点拉到当前收益率
+    out.push({ t: new Date(t).toISOString(), v: Math.round(cost * (1 + g) * 100) / 100, c: Math.round(cost * 100) / 100, r: Math.round(r * frac * 100) / 100 });
+  }
+  return out;
+}
+
 function recordSnapshot(totalCNY, totalCost, totalRealized) {
   const now = Date.now();
   if (now - lastSnapshotTime < SNAPSHOT_INTERVAL) return null;
@@ -843,6 +892,8 @@ function recordSnapshot(totalCNY, totalCost, totalRealized) {
     if (lastV > 0 && totalCNY < lastV * 0.8) return null;
   }
   lastSnapshotTime = now;
+  const seedDemo = process.env.DEMO === "1" && snaps.length === 0;
+  if (seedDemo) memHistory.snapshots = demoHistory(totalCNY, totalCost, totalRealized || 0, now);
   const snapshot = {
     t: new Date().toISOString(),
     v: Math.round(totalCNY * 100) / 100,
@@ -851,7 +902,7 @@ function recordSnapshot(totalCNY, totalCost, totalRealized) {
   };
   memHistory.snapshots.push(snapshot);
   memHistory.snapshots = compactHistory(memHistory.snapshots);
-  saveHistoryFile(snapshot);
+  if (seedDemo) checkpointHistory(); else saveHistoryFile(snapshot);
   cachedRiskMetrics = calcRiskMetrics(memHistory.snapshots);
   return snapshot;
 }
@@ -1019,6 +1070,7 @@ function toSinaSymbol(h) {
 // Fetch stock prices from Sina Finance API (works globally)
 async function fetchStockPrices(holdings) {
   if (!holdings.length) return {};
+  if (LOCAL_MODE) return fetchStockPricesEastMoney(holdings);   // 浏览器版: 新浪接口不允许跨域, 直接用东方财富
   const symbolMap = {};
   const sinaSymbols = [];
   holdings.forEach((h) => {
@@ -1315,6 +1367,9 @@ const PUBLIC_STATIC_FILES = {
   "/csv-import.js": ["csv-import.js", "application/javascript; charset=utf-8"],
   "/ai-panel.js": ["ai-panel.js", "application/javascript; charset=utf-8"],
   "/onboard.js": ["onboard.js", "application/javascript; charset=utf-8"],
+  "/report.js": ["report.js", "application/javascript; charset=utf-8"],
+  "/share.js": ["share.js", "application/javascript; charset=utf-8"],
+  "/card.html": ["card.html", "text/html; charset=utf-8"],
   "/sw.js": ["sw.js", "application/javascript; charset=utf-8"],
   "/manifest.json": ["manifest.json", "application/manifest+json; charset=utf-8"],
   "/favicon.ico": ["favicon.ico", "image/x-icon"],
@@ -1752,7 +1807,7 @@ const server = http.createServer((req, res) => {
           res.end(JSON.stringify({ ok: false, error: `尝试过多，请 ${wait}s 后再试` }));
           return;
         }
-        if (verifyPassword(password)) {
+        if (LOCAL_MODE || verifyPassword(password)) {
           authReset(ip);
           const token = generateToken();
           res.writeHead(200, { "Content-Type": "application/json" });
@@ -2817,7 +2872,7 @@ const WS_MAX_PER_IP = 8;   // 单 IP 上限
 const wsPerIp = new Map();
 wss.on("connection", (ws, req) => {
   const ip = clientIp(req);
-  if (!PUBLIC_READ) {
+  if (!PUBLIC_READ && !LOCAL_MODE) {
     let token = "";
     try { token = new URL(req.url, "http://x").searchParams.get("token") || ""; } catch (e) {}
     if (!token || !validTokens.has(token)) { try { ws.close(4401, "unauthorized"); } catch (e) {} return; }

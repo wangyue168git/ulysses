@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>纪律成绩单 · 尤利西斯</title>
+<meta name="description" content="尤利西斯：一个让你少看盘的投资看板。冷静时写下规则，冲动时替你守住。">
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.ico">
+<style>
+  :root { --bg: #0b1220; --fg: #e5e7eb; --mut: #9ca3af; --acc: #14b8a6; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
+  main { max-width: 440px; margin: 0 auto; padding: 24px 16px calc(32px + env(safe-area-inset-bottom)); }
+  img { width: 100%; border-radius: 16px; display: block; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+  h1 { font-size: 18px; margin: 22px 0 6px; }
+  p { color: var(--mut); margin: 6px 0; font-size: 14px; }
+  .btn { display: block; text-align: center; margin-top: 18px; padding: 12px; border-radius: 14px; background: var(--acc); color: #fff; font-weight: 700; text-decoration: none; }
+  .btn.sec { background: #1f2937; color: var(--fg); margin-top: 10px; }
+</style>
+</head>
+<body>
+<main>
+  <div id="card"></div>
+  <h1>这是一张投资纪律成绩单</h1>
+  <p>它来自<b>尤利西斯</b>：一个开源的持仓看板。想买什么先写下规则，之后每只持仓旁边都会按你自己的规则提示「可加」还是「封仓」。</p>
+  <p>卡片只记录有没有按规则行事，没有任何金额或收益。</p>
+  <a class="btn" href="./">在线试用，不用安装</a>
+  <a class="btn sec" href="https://github.com/wangyue168git/ulysses">在 GitHub 上查看</a>
+</main>
+<script src="classify.js"></script>
+<script src="report.js"></script>
+<script src="share.js"></script>
+<script>
+  (function () {
+    var box = document.getElementById("card");
+    var p = window.CalmReport.decodeShare(location.hash.slice(1));
+    if (!p) { box.innerHTML = '<p>链接不完整或已损坏，打不开这张成绩单。</p>'; return; }
+    var img = new Image();
+    img.alt = p.title || "纪律成绩单";
+    img.src = window.CalmShare.drawCard(p).toDataURL("image/png");
+    box.appendChild(img);
+    document.title = (p.title || "纪律成绩单") + " " + (p.grade || "") + " · 尤利西斯";
+  })();
+</script>
+</body>
+</html>

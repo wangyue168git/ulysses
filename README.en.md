@@ -6,6 +6,8 @@
 
 [中文](README.md) | English
 
+**[👉 Try it online](https://wangyue168git.github.io/ulysses/)** — nothing to install. It opens with demo data; clear it to enter your own holdings, which stay in your browser only.
+
 > In the *Odyssey*, Ulysses has to sail past the Sirens. Knowing he will not be able to resist their song, he has his crew tie him to the mast and tells them: "Whatever I say later, do not untie me."
 >
 > Behavioural economists call this a **Ulysses contract**: while you are clear-headed, you bind the impulsive person you will become later.
@@ -22,6 +24,7 @@
 
 - **"Add / hold off" tags driven by your own rules**: always add, weight-based (add below one line, stop at another, stop once a target share count is reached), or never add. Rules can be set right on the page, and every change is logged.
 - **Discipline page**: did this month's index purchase happen, is the index/stock split on target, have you bought enough of each stock — all on one screen.
+- **Discipline scorecard / year in review**: a grade for how well you kept your own rules, and a story-style look back at the year; save it as an image to share — it contains grades and ratios only, never amounts. (The UI is in Chinese.)
 - **Designed against anxiety**: profit and loss are hidden on the home screen by default; tap to peek and they hide again after a few seconds. Colour is used only where attention is needed.
 - **All accounts in one place**: China A-shares, mutual funds, Hong Kong and US stocks, and crypto, converted to one currency.
 - **Desktop analysis**: exposure breakdown, return attribution, an investment journal, and the equity curve.
@@ -34,6 +37,8 @@
 > Screenshots show fictional demo data. The UI is currently in Chinese.
 
 ## Quick start
+
+**Try it first:** open the [browser version](https://wangyue168git.github.io/ulysses/). No deployment: holdings, rules, the discipline page, live quotes and the AI demo all work, with data kept in your own browser (you can export a backup). Broker sync, a real AI model and sharing data across devices need the full self-hosted version below.
 
 With Docker:
 
