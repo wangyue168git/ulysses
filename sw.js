@@ -1,15 +1,15 @@
 // Ulysses PWA Service Worker —— 缓存外壳: 二次打开秒开 + 离线可看上次画面
 // 策略: 外壳/静态资源 stale-while-revalidate(先给缓存、后台更新); /api/* 与 WebSocket 不缓存,始终走网络。
-const CACHE = 'ulysses-v4';
+const CACHE = 'ulysses-v5';
 const SHELL = [
   '/m.html',
-  '/tailwind.css?v=12',
+  '/tailwind.css?v=13',
   '/chart.umd.min.js',
   '/classify.js?v=18',
   '/ai-panel.js?v=7',
   '/onboard.js?v=1',
-  '/report.js?v=1',
-  '/share.js?v=1',
+  '/report.js?v=2',
+  '/share.js?v=2',
   '/manifest.json',
   '/favicon.ico',
   '/icon-192.png',

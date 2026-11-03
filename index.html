@@ -12,14 +12,14 @@
     <script>/* 防主题闪烁: CSS加载前先定class */(function(){var m=localStorage.getItem('themeMode')||'auto';if(m==='dark'||(m==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');})();</script>
     <!-- 本地化静态资源(原 cdn.tailwindcss.com 运行时 + jsdelivr chart.js): 摆脱 CDN 抖动,与 m.html 共用同一份 -->
     <!-- tailwind.css 重建: npx tailwindcss@3 -c tailwind.config.js -i tailwind.input.css -o tailwind.css --minify -->
-    <link rel="stylesheet" href="/tailwind.css?v=12"><!-- 改 tailwind.css 时三处版本号同步: index.html / m.html / sw.js -->
+    <link rel="stylesheet" href="/tailwind.css?v=13"><!-- 改 tailwind.css 时三处版本号同步: index.html / m.html / sw.js -->
     <script src="/chart.umd.min.js"></script>
     <script src="/classify.js?v=18"></script><!-- 改 classify.js 时三处版本号同步: index.html / m.html / sw.js -->
     <script src="/csv-import.js?v=1"></script>
     <script src="/ai-panel.js?v=7"></script>
     <script src="/onboard.js?v=1"></script>
-    <script src="/report.js?v=1"></script>
-    <script src="/share.js?v=1"></script>
+    <script src="/report.js?v=2"></script>
+    <script src="/share.js?v=2"></script>
     <style>
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
@@ -389,7 +389,7 @@
             <div class="flex items-center justify-between mb-4 flex-wrap gap-1">
                 <p class="text-sm text-slate-500 font-semibold">纪律</p>
                 <p id="dcLockdown" class="text-xs text-slate-400 hidden"></p>
-                <span class="flex gap-2 ml-auto"><button onclick="openScorecardD()" class="text-xs font-semibold px-3 py-1 rounded-full bg-teal-500/10 text-teal-500 hover:bg-teal-500/20">纪律成绩单</button><button onclick="openYearD()" class="text-xs font-semibold px-3 py-1 rounded-full bg-teal-500/10 text-teal-500 hover:bg-teal-500/20">年度回顾</button></span>
+                <span class="flex gap-2 ml-auto"><button onclick="openAdviceD()" class="text-xs font-semibold px-3 py-1 rounded-full bg-teal-500 text-white hover:bg-teal-600">本月该买什么</button><button onclick="openScorecardD()" class="text-xs font-semibold px-3 py-1 rounded-full bg-teal-500/10 text-teal-500 hover:bg-teal-500/20">纪律成绩单</button><button onclick="openYearD()" class="text-xs font-semibold px-3 py-1 rounded-full bg-teal-500/10 text-teal-500 hover:bg-teal-500/20">年度回顾</button></span>
             </div>
             <div id="dcExecRow" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5"></div>
             <div id="dcAllocBars" class="hidden"></div>
@@ -2296,6 +2296,10 @@ function renderOnboardD() {
 }
 setInterval(renderOnboardD, 1500);
 // 纪律成绩单 / 年度回顾(只有等级和比例, 可分享; 见 report.js / share.js)
+function openAdviceD() {
+    if (!portfolioData || !planDoc || !window.CalmShare) return;
+    CalmShare.openAdvice(portfolioData, planDoc, { store: { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } } });
+}
 function openScorecardD() { if (portfolioData && planDoc && window.CalmShare) CalmShare.openCard(portfolioData, planDoc); }
 async function openYearD(year) {
     if (!portfolioData || !planDoc || !window.CalmShare) return;

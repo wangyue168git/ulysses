@@ -209,7 +209,112 @@
     } catch (e) { return null; }
   }
 
-  const api = { tradeEvents, hasRule, dcaMonths, structure, ruleChanges, scorecard, yearCurve, yearReview, gradeOf, encodeShare, decodeShare };
+  // ---------- 本月该买什么: 按自己的规则, 把这个月要投的钱分到「可加」的标的上 ----------
+  // 顺序: ① 指数定投补到本月目标 ② 指数占比低于下限就继续补指数 ③ 可加的个股补到封仓线下(不超目标股数、个股合计上限)
+  //       ④ 剩下的回到指数; 没有可加的就留作现金。只是建议, 不会下单。
+  // opts: { now, store(迟滞记忆, 页面传 localStorage 包装), iopvOf(symbol) → { iopv, time }(场内 ETF 溢价规则用) }
+  function buyAdvice(state, plan, budgetCNY, opts) {
+    opts = opts || {};
+    const now = opts.now || new Date();
+    const rate = rateOf(state), ch = (plan && plan.channels) || {}, ta = (plan && plan.targetAllocation) || {};
+    if (C.configureGroups && plan) C.configureGroups(plan.groups);
+    const offAcc = new Set(ch.offshoreAccounts || []);
+    let total = 0, stockV = 0, idxV = 0, offshore = 0;
+    const bySym = {};
+    ((state && state.accounts) || []).forEach((acc) => {
+      const cur = acc.currency || "CNY", m = mulOf(cur, rate);
+      total += (Number(acc.cash) || 0) * m;
+      (acc.holdings || []).forEach((h) => {
+        const v = ((Number(h.marketValue) || 0) + (Number(h.pendingAmount) || 0)) * m;
+        if (!(v > 0)) return;
+        total += v;
+        const b = C.classifyAllocationBucket(h);
+        const kind = b === "纳指指数类" || b === "标普" ? "index" : (h.market === "nasdaq" || h.market === "nyse") && !C.isOtherHolding(h) ? "stock" : "other";
+        if (kind === "index") idxV += v;
+        if (kind === "stock") stockV += v;
+        if (offAcc.has(acc.name) && h.market !== "crypto") offshore += v;
+        const s = bySym[h.symbol] || (bySym[h.symbol] = { symbol: h.symbol, name: h.name || h.symbol, market: h.market, cur, m, price: Number(h.currentPrice) || 0, shares: 0, v: 0, kind });
+        s.shares += Number(h.shares) || 0; s.v += v;
+        if (!s.price) s.price = Number(h.currentPrice) || 0;
+      });
+    });
+    const B = Math.max(0, Number(budgetCNY) || 0), T = total + B;
+    const stockPct = total > 0 ? stockV / total * 100 : 0;
+    const rows = Object.values(bySym).filter((s) => s.price > 0).map((s) => {
+      const io = opts.iopvOf ? opts.iopvOf(s.symbol) || {} : {};
+      const ev = C.evaluateChannel(ch, s.symbol, { weightPct: total > 0 ? s.v / total * 100 : 0, stockPct, offshoreCNY: offshore, usdCny: rate,
+        price: s.price, iopv: io.iopv || 0, iopvTime: io.time || "", shares: s.shares }, opts.store);
+      return Object.assign(s, { st: ev.st, rule: (ch.symbols || {})[s.symbol] || null });
+    });
+    const open = rows.filter((s) => s.st === "open");
+    const alloc = new Map(), why = {};   // Map 保留分配顺序(定投 → 结构 → 个股 → 余额), 列表照这个顺序显示
+    let left = B;
+    const give = (list, amount, reason) => {
+      amount = Math.min(amount, left);
+      if (!(amount > 0) || !list.length) return 0;
+      const each = amount / list.length;
+      list.forEach((s) => { alloc.set(s.symbol, (alloc.get(s.symbol) || 0) + each); why[s.symbol] = why[s.symbol] || []; if (!why[s.symbol].includes(reason)) why[s.symbol].push(reason); });
+      left -= amount;
+      return amount;
+    };
+    const fmt = (n) => "¥" + Math.round(n).toLocaleString("en-US");
+    const notes = [];
+
+    // ① 指数定投
+    const ip = ch.indexPlan;
+    const hasIp = !!(ip && Array.isArray(ip.symbols) && ip.symbols.length);
+    const ipOpen = hasIp ? open.filter((s) => ip.symbols.includes(s.symbol)) : [];
+    if (hasIp) {
+      const ym = ymOf(now);
+      const bought = tradeEvents(state).filter((e) => e.side === "buy" && ip.symbols.includes(e.symbol) && ymOf(e.date) === ym).reduce((a, e) => a + e.cny, 0);
+      const need = Math.max(0, (Number(ip.monthlyCNY) || 0) - bought);
+      if (need > 0 && ipOpen.length) give(ipOpen, need, `每月指数定投（目标 ${fmt(Number(ip.monthlyCNY) || 0)}，本月已买 ${fmt(bought)}）`);
+      else if (need > 0) notes.push("定投计划里的指数现在都不是「可加」，这部分先不分配。");
+      else notes.push(`本月指数定投已买 ${fmt(bought)}，达到目标。`);
+    }
+    // ② 指数占比低于下限
+    const idxOpen = open.filter((s) => s.kind === "index");
+    if (ta.indexTargetPct != null && idxOpen.length) {
+      const added = idxOpen.reduce((a, s) => a + (alloc.get(s.symbol) || 0), 0);
+      const gap = Number(ta.indexTargetPct) / 100 * T - idxV - added;
+      if (gap > 0) give(idxOpen, gap, `指数占比低于目标 ≥${ta.indexTargetPct}%`);
+    }
+    // ③ 可加的个股: 补到封仓线以下 0.5 个百分点, 不超过目标股数和个股合计上限
+    const capPct = ta.stockCapPct != null ? Number(ta.stockCapPct) : ch.stockBucketCapPct != null ? Number(ch.stockBucketCapPct) : null;
+    let stockRoom = capPct != null ? capPct / 100 * T - stockV : Infinity;
+    open.filter((s) => s.kind === "stock").sort((a, b) => a.v - b.v).forEach((s) => {
+      const r = s.rule || {};
+      const sealPct = r.type === "band" ? Number(r.sealAtPct) : Number(ta.singleCapPct) || null;
+      let room = sealPct ? (sealPct - 0.5) / 100 * T - s.v : 0;
+      if (r.targetShares > 0) room = Math.min(room, Math.max(0, r.targetShares - s.shares) * s.price * s.m);
+      room = Math.min(room, stockRoom);
+      if (room > s.price * s.m * 0.2) {
+        const got = give([s], room, sealPct ? `占比 ${(s.v / Math.max(total, 1) * 100).toFixed(1)}%，加到封仓线 ${sealPct}% 以下${r.targetShares > 0 ? `，目标 ${r.targetShares} 股` : ""}` : "可加");
+        stockRoom -= got;
+      }
+    });
+    // ④ 剩下的回到指数(没有可加的指数, 就给其他「可加」的非个股标的)
+    if (left > 0) {
+      const pool = ipOpen.length ? ipOpen : idxOpen.length ? idxOpen : open.filter((s) => s.kind !== "stock");
+      if (pool.length) give(pool, left, "剩下的钱回到指数");
+      else notes.push("现在没有「可加」的标的，剩下的钱先留作现金。");
+    }
+
+    // 金额 → 股数: A 股 / 港股按 100 股一手向下取整, 其他保留两位小数(美股多数券商可买碎股)
+    let unspent = left;
+    const out = [...alloc.keys()].map((sym) => {
+      const s = bySym[sym], unit = s.price * s.m;
+      const lot = s.market === "sh" || s.market === "sz" || s.market === "hk" ? 100 : 0;
+      const shares = lot ? Math.floor(alloc.get(sym) / unit / lot) * lot : Math.floor(alloc.get(sym) / unit * 100) / 100;
+      const amount = shares * unit;
+      unspent += alloc.get(sym) - amount;
+      return { symbol: sym, name: s.name, market: s.market, cur: s.cur, price: s.price, shares, amountCNY: amount, lot, reasons: why[sym] };
+    }).filter((r) => r.shares > 0);
+    if (unspent > 1 && [...alloc.keys()].some((sym) => ["sh", "sz", "hk"].includes(bySym[sym].market))) notes.push("A 股 / 港股按 100 股一手取整，零头没有分配。");
+    return { budgetCNY: B, rows: out, leftoverCNY: Math.max(0, unspent), notes, openCount: open.length };
+  }
+
+  const api = { tradeEvents, hasRule, dcaMonths, structure, ruleChanges, scorecard, yearCurve, yearReview, gradeOf, encodeShare, decodeShare, buyAdvice };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.CalmReport = api;
 })(typeof window !== "undefined" ? window : globalThis);

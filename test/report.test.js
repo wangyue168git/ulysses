@@ -101,3 +101,36 @@ test("分享编码: 往返一致; 篡改或超长的链接一律拒绝", () => {
   assert.equal(R.decodeShare(Buffer.from(JSON.stringify({ v: 1, k: "card", g: "S", i: [] })).toString("base64url")), null);
   assert.equal(R.decodeShare("a".repeat(4000)), null);
 });
+
+test("buyAdvice: 先补指数定投, 再补可加的个股(到封仓线下、不超目标股数), 剩下回到指数; 封仓的一分不给", () => {
+  const state = {
+    exchangeRate: { USD_CNY: 7 },
+    accounts: [
+      { name: "IB", currency: "USD", cash: 0, holdings: [
+        { symbol: "VOO", market: "nyse", shares: 20, currentPrice: 500, marketValue: 10000, transactions: [] },
+        { symbol: "AAPL", market: "nasdaq", shares: 5, currentPrice: 200, marketValue: 1000, transactions: [] },
+        { symbol: "TSLA", market: "nasdaq", shares: 4, currentPrice: 250, marketValue: 1000, transactions: [] },
+      ] },
+      { name: "A股", currency: "CNY", cash: 0, holdings: [{ symbol: "510300", market: "sh", shares: 1000, currentPrice: 4, marketValue: 4000, transactions: [] }] },
+    ],
+  };
+  const plan = {
+    targetAllocation: { indexTargetPct: 60, stockCapPct: 30 },
+    channels: { indexPlan: { symbols: ["VOO", "510300"], monthlyCNY: 3000 }, symbols: {
+      VOO: { type: "open" }, AAPL: { type: "band", openBelowPct: 13, sealAtPct: 15, targetShares: 8 }, TSLA: { type: "seal" }, "510300": { type: "open" } } },
+  };
+  const r = R.buyAdvice(state, plan, 10000, { now: d("2026-11-03") });
+  const by = Object.fromEntries(r.rows.map((x) => [x.symbol, x]));
+  assert.equal(by.TSLA, undefined, "封仓的不给");
+  assert.match(by.VOO.reasons[0], /每月指数定投/);
+  assert.equal(by.AAPL.shares, 3, "目标 8 股, 已有 5 股 → 最多 3 股");
+  assert.equal(by["510300"].shares % 100, 0, "A 股按手取整");
+  const spent = r.rows.reduce((a, x) => a + x.amountCNY, 0);
+  assert.ok(Math.abs(spent + r.leftoverCNY - 10000) < 1, "分出去的 + 剩下的 = 预算");
+
+  plan.channels.symbols = { VOO: { type: "seal" }, AAPL: { type: "seal" }, TSLA: { type: "seal" }, "510300": { type: "seal" } };
+  const none = R.buyAdvice(state, plan, 5000, { now: d("2026-11-03") });
+  assert.equal(none.rows.length, 0);
+  assert.equal(Math.round(none.leftoverCNY), 5000);
+  assert.ok(none.notes.some((n) => /留作现金/.test(n)));
+});

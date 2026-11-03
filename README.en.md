@@ -24,6 +24,7 @@
 
 - **"Add / hold off" tags driven by your own rules**: always add, weight-based (add below one line, stop at another, stop once a target share count is reached), or never add. Rules can be set right on the page, and every change is logged.
 - **Discipline page**: did this month's index purchase happen, is the index/stock split on target, have you bought enough of each stock — all on one screen.
+- **What to buy this month**: enter this month's budget and get a split across the holdings your rules allow: index plan first, then the structure targets, then stocks that are open for adding.
 - **Discipline scorecard / year in review**: a grade for how well you kept your own rules, and a story-style look back at the year; save it as an image to share — it contains grades and ratios only, never amounts. (The UI is in Chinese.)
 - **Designed against anxiety**: profit and loss are hidden on the home screen by default; tap to peek and they hide again after a few seconds. Colour is used only where attention is needed.
 - **All accounts in one place**: China A-shares, mutual funds, Hong Kong and US stocks, and crypto, converted to one currency.

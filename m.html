@@ -14,13 +14,13 @@
 <meta name="apple-mobile-web-app-title" content="尤利西斯">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><!-- iOS26: default 模式下 env(safe-area-inset-top) 恒为0, translucent 才如实上报 -->
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="stylesheet" href="/tailwind.css?v=12">
+<link rel="stylesheet" href="/tailwind.css?v=13">
 <script src="/chart.umd.min.js"></script>
 <script src="/classify.js?v=18"></script>
 <script src="/ai-panel.js?v=7"></script>
 <script src="/onboard.js?v=1"></script>
-<script src="/report.js?v=1"></script>
-<script src="/share.js?v=1"></script>
+<script src="/report.js?v=2"></script>
+<script src="/share.js?v=2"></script>
 <style>
     :root {
         color-scheme: light;
@@ -329,6 +329,7 @@
     <div id="mDcAlloc"></div>
     <div id="mDcScore"></div>
     <div class="flex justify-center mt-4" style="gap:8px">
+        <button onclick="openAdviceM()" class="px-4 py-2 rounded-full text-[13px] font-bold bg-teal-500 text-white">本月该买什么</button>
         <button onclick="openScorecardM()" class="px-4 py-2 rounded-full text-[13px] font-bold bg-white text-teal-600">纪律成绩单</button>
         <button onclick="openYearM()" class="px-4 py-2 rounded-full text-[13px] font-bold bg-white text-teal-600">年度回顾</button>
     </div>
@@ -2127,6 +2128,10 @@ function renderOnboardM(){
 }
 setInterval(renderOnboardM, 1500);
 // 纪律成绩单 / 年度回顾(只有等级和比例, 可分享; 见 report.js / share.js)
+function openAdviceM(){
+    if (!state || !planDoc || !window.CalmShare) return;
+    CalmShare.openAdvice(state, planDoc, { store: _chStore, iopvOf: (sym) => { const n = _navCache[sym]; return n && Date.now() - (n.at || 0) < 24 * 3600 * 1000 ? { iopv: n.iopv, time: n.time } : null; } });
+}
 function openScorecardM(){ if (state && planDoc && window.CalmShare) CalmShare.openCard(state, planDoc); }
 async function openYearM(year){
     if (!state || !planDoc || !window.CalmShare) return;

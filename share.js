@@ -165,6 +165,50 @@
     };
   }
 
+  // ---------- 本月该买什么(只在自己页面里看, 有金额, 不分享) ----------
+  function openAdvice(state, plan, opts) {
+    css();
+    const ip = plan && plan.channels && plan.channels.indexPlan;
+    let budget = 0;
+    try { budget = Number(localStorage.getItem("ulyssesAdviceBudget")) || 0; } catch (e) {}
+    if (!budget) budget = (ip && Number(ip.monthlyCNY)) || 3000;
+    const money = (n) => "¥" + Math.round(n).toLocaleString("en-US");
+    const native = (r) => (r.cur === "USD" ? "$" : r.cur === "HKD" ? "HK$" : "¥") + (r.price >= 100 ? r.price.toFixed(2) : r.price.toFixed(3));
+    const mask = document.createElement("div");
+    mask.className = "cs-mask";
+    mask.innerHTML = `<div class="cs-box" role="dialog" aria-label="本月该买什么">
+      <button class="cs-x" data-a="close" aria-label="关闭">×</button>
+      <div style="font-size:17px;font-weight:700">本月该买什么</div>
+      <div class="cs-note" style="margin-top:4px">按你写下的规则，把这个月要投的钱分到「可加」的标的上：先补指数定投，再补结构，然后才是个股。</div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;background:#1f2937;border-radius:12px;padding:10px 12px">
+        <span style="color:#9ca3af;white-space:nowrap">这个月投入 ¥</span>
+        <input id="csBudget" type="number" inputmode="decimal" min="0" step="100" value="${budget}" style="flex:1;min-width:0;border:0;outline:0;background:none;color:#f3f4f6;font:700 20px/1.2 inherit">
+      </label>
+      <div id="csAdv" style="margin-top:12px"></div>
+      <div class="cs-note">只是按规则算出来的建议，不会下单，也不构成投资建议。股价是看板里的最新价，实际成交会有出入；美股按碎股算到 0.01 股。</div>
+    </div>`;
+    document.body.appendChild(mask);
+    const inp = mask.querySelector("#csBudget"), box = mask.querySelector("#csAdv");
+    const draw = () => {
+      const b = Math.max(0, Number(inp.value) || 0);
+      try { localStorage.setItem("ulyssesAdviceBudget", String(b)); } catch (e) {}
+      const r = R.buyAdvice(state, plan, b, opts || {});
+      box.innerHTML = (r.rows.length ? r.rows.map((x) => `<div style="padding:10px 0;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(x.symbol)} <span style="color:#9ca3af;font-weight:500;font-size:12px">${esc(x.name !== x.symbol ? x.name : "")}</span></b><b>${money(x.amountCNY)}</b></div>
+          <div style="display:flex;justify-content:space-between;gap:8px;color:#9ca3af;font-size:12px;margin-top:2px"><span>${esc(x.reasons.join("；"))}</span><span style="white-space:nowrap">${x.lot ? x.shares : x.shares.toFixed(2)} 股 × ${native(x)}</span></div>
+        </div>`).join("") : `<div class="cs-note">没有可分配的标的。</div>`)
+        + (r.leftoverCNY >= 1 ? `<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);color:#9ca3af"><span>留作现金</span><span>${money(r.leftoverCNY)}</span></div>` : "")
+        + r.notes.map((n) => `<div class="cs-note">· ${esc(n)}</div>`).join("");
+    };
+    inp.oninput = draw;
+    draw();
+    mask.onclick = (e) => {
+      if (e.target === mask) return mask.remove();
+      const b = e.target.closest("[data-a]");
+      if (b && b.dataset.a === "close") mask.remove();
+    };
+  }
+
   // ---------- 首页入口: 12 月 1 日到次年 1 月 15 日出现「年度回顾」卡片, 可关掉 ----------
   // 页面定时调用: yearEntry(容器, { hasData, open(year) }); 不在时间窗或关掉过就清空
   function yearEntry(el, ctx) {
@@ -190,5 +234,5 @@
     };
   }
 
-  window.CalmShare = { drawCard, openCard, openYear, yearEntry, linkOf, cardPayload, yearPayload };
+  window.CalmShare = { drawCard, openCard, openYear, openAdvice, yearEntry, linkOf, cardPayload, yearPayload };
 })();
