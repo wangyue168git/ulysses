@@ -1,10 +1,10 @@
 name: 浏览器版 (GitHub Pages)
 
-# 每次推到 main: 生成纯静态的浏览器版(scripts/build-web.mjs)并发布到 GitHub Pages。
+# 每次推到 quiet(安静版, 默认分支): 生成纯静态的浏览器版(scripts/build-web.mjs)并发布到 GitHub Pages。
 # 第一次需要在仓库 Settings → Pages → Source 选「GitHub Actions」。
 on:
   push:
-    branches: [main]
+    branches: [quiet]
   workflow_dispatch:
 
 permissions:

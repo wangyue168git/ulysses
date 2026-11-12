@@ -199,6 +199,12 @@ function evaluateChannel(cfg, sym, input, store) {
 }
 
 // 浏览器当普通 <script> 引入(函数挂全局); Node 端 server.js require 使用
+// 个股判定: 非指数(纳指/标普)、非加密、非基金/场内 ETF、非警戒仓、非「其他」组。美股、A 股、港股的个股都算。
+function isIndividualStock(holding) {
+    if (!holding || holding.market === 'fund' || holding.market === 'crypto' || isCnExchangeFund(holding)) return false;
+    if (classifyAllocationBucket(holding)) return false;
+    return !isWarningHolding(holding) && !isOtherHolding(holding);
+}
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { NASDAQ_SYMBOLS, SP500_SYMBOLS, configureGroups, isCnExchangeFund, isWarningHolding, isOtherHolding, classifyPieGroup, classifyAllocationBucket, classifyLookThroughBucket, deriveCategory, sampleByTime, tradingDaySnapshots, evaluateChannel };
+    module.exports = { NASDAQ_SYMBOLS, SP500_SYMBOLS, configureGroups, isCnExchangeFund, isWarningHolding, isOtherHolding, isIndividualStock, classifyPieGroup, classifyAllocationBucket, classifyLookThroughBucket, deriveCategory, sampleByTime, tradingDaySnapshots, evaluateChannel };
 }

@@ -16,7 +16,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="/tailwind.css?v=13">
 <script src="/chart.umd.min.js"></script>
-<script src="/classify.js?v=18"></script>
+<script src="/classify.js?v=19"></script>
 <script src="/ai-panel.js?v=7"></script>
 <script src="/onboard.js?v=1"></script>
 <script src="/report.js?v=2"></script>
@@ -42,8 +42,9 @@
         --ch-open-fg: #2dd4bf; --ch-open-bg: rgba(45,212,191,0.12); --ch-seal-fg: #6f7b8b; --ch-seal-bg: #1c242f;
         --alloc-index: #6366f1; --alloc-index-soft: #818cf8;
     }
-    /* 纪律页版式: 与首页同一套视觉语法:
+    /* 纪律页版式方案 1 · 首页同款:
        大数字领头 + 每条规则一张圆点行卡; 颜色只在小圆点/签/打勾上, 类别色与持仓页一致; 境外托管行仅在 ≥ 重启线时出现 */
+    #pageDiscipline .dc-gap { height: 10px; }
     #pageDiscipline .dc-sec { font-size: 11px; font-weight: 700; color: var(--dim); letter-spacing: .06em; margin: 18px 4px 6px; }
     #pageDiscipline .dc-row { border-radius: 18px; padding: 13px 16px; margin-bottom: 8px; }
     #pageDiscipline .dc-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
@@ -52,12 +53,55 @@
     #pageDiscipline .dc-ok { color: var(--ch-open-fg); font-weight: 800; }
     #pageDiscipline .dc-warn { color: #d97706; font-weight: 700; }
     body.dark #pageDiscipline .dc-warn { color: #fbbf24; }
+    #pageDiscipline .dc-pct { color: var(--text); font-weight: 700; }
+    #pageDiscipline .dc-co { padding: 15px 16px; }
+    #pageDiscipline .dc-co-card { padding: 3px 16px; }
+    #pageDiscipline .dc-co-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; }
+    #pageDiscipline .dc-co-sub { font-size: 11px; color: var(--dim); margin-top: 2px; }
+    #pageDiscipline .dc-co-sh { white-space: nowrap; flex: none; }
+    #pageDiscipline .dc-co-plan { opacity: .65; cursor: pointer; }
+    #pageDiscipline .dc-co-name { font-size: 16px; font-weight: 800; white-space: nowrap; }
+    #pageDiscipline .dc-co-cn { font-size: 13px; font-weight: 700; color: var(--dim); white-space: nowrap; }
+    #pageDiscipline .dc-co-biz { font-size: 13px; color: var(--dim); margin-top: 4px; padding-left: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #pageDiscipline .dc-sec-tap { display: flex; justify-content: space-between; align-items: baseline; cursor: pointer; }
+    #pageDiscipline .dc-sec-more { font-size: 11px; font-weight: 700; color: var(--dim); letter-spacing: 0; }
+    #pageDiscipline .dc-near { color: var(--dim); font-weight: 800; }   /* 指数在目标线下 2pp 宽限内: 中性「≈」, 不用 ✓ 也不报警 */
     #pageDiscipline .dc-quote { text-align: center; font-size: 12px; color: var(--dim); margin-top: 16px; }
     #pageDiscipline .dc-quote b { color: var(--text); }
-    /* 持仓行通道签(可加/封仓): V3 底色签, 9px, 贴 symbol 右侧; 闸门读 plan.json channels */
+    #pageDiscipline .dc-flip { animation: dcFlip .38s ease; transform-origin: center; }
+    @keyframes dcFlip { from { transform: perspective(800px) rotateY(80deg); opacity: .2; } to { transform: none; opacity: 1; } }
+    #pageDiscipline .dc-creed-card { margin: 0; cursor: pointer; display: flex; align-items: center; min-height: var(--dc-score-h, 89px); padding: 12px 18px; }
+    #pageDiscipline .dc-creed-v { display: flex; flex-direction: row-reverse; justify-content: center; gap: 26px; margin-top: 52px; min-height: 330px; }
+    #pageDiscipline .dc-cv-main, #pageDiscipline .dc-cv-sub { writing-mode: vertical-rl; white-space: nowrap; font-family: "Kaiti SC","STKaiti","KaiTi","Songti SC",serif; }
+    #pageDiscipline .dc-cv-main { font-size: 32px; font-weight: 600; letter-spacing: 7px; }
+    #pageDiscipline .dc-cv-sub { font-size: 20px; letter-spacing: 7px; opacity: .75; }
+    #pageDiscipline .dc-cv-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    #pageDiscipline .dc-cv-seal { width: 24px; height: 24px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-family: "Kaiti SC","STKaiti","Songti SC",serif; font-size: 14px; background: #b83a2c; color: #fff; }
+    #pageDiscipline .dc-creed { padding: 2px 0 2px 14px; border-left: 2px solid var(--ch-open-fg); }
+    #pageDiscipline .dc-creed-hero { font-size: 22px; font-weight: 900; letter-spacing: .02em; line-height: 1.3; }
+    #pageDiscipline .dc-creed-sub { font-size: 12px; font-weight: 600; color: var(--dim); margin-top: 6px; }
+    #pageDiscipline .dc-creed-sep { margin: 0 8px; opacity: .6; }
+    /* 持仓行通道签(可加/封仓): V3 底色签, 9px, 贴 symbol 右侧; 闸门读 plan.json channels  */
     .ch-tag { font-size: 9px; font-weight: 800; line-height: 1; padding: 3px 5px; border-radius: 4px; flex: 0 0 auto; letter-spacing: .02em; }
     .ch-tag.open { color: var(--ch-open-fg); background: var(--ch-open-bg); }
+    .filter-tag { font-size: 12px; font-weight: 600; color: var(--dim); }
+    .filter-tag:empty { display: none; }
+    .filter-chev { color: var(--dim); flex: none; }
+    .filter-menu { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); min-width: 150px; z-index: 30; background: var(--card); border-radius: 14px; padding: 6px 0; font-size: 15px;
+        box-shadow: 0 0 0 1px rgba(148,163,184,.25), 0 12px 30px rgba(0,0,0,.28); }
+    .filter-menu.more-menu { left: auto; right: 0; transform: none; min-width: 190px; }
+    .more-menu div span { color: #9ca3af; font-weight: 500; }
+    .filter-menu div { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 10px 18px; font-weight: 500; cursor: pointer; }
+    .filter-menu div.on { font-weight: 700; }
+    .filter-menu div.on::after { content: '✓'; color: #14b8a6; }
+    .dca-sw { width: 50px; height: 30px; border-radius: 15px; background: #cbd5e1; position: relative; flex: none; cursor: pointer; transition: background .2s; }
+    body.dark .dca-sw { background: #475569; }
+    .dca-sw::after { content: ''; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .2s; }
+    .dca-sw.on, body.dark .dca-sw.on { background: #14b8a6; } .dca-sw.on::after { transform: translateX(20px); }
+    .ch-tag.warn { color: #c2410c; background: #ffedd5; }
+    body.dark .ch-tag.warn { color: #fdba74; background: rgba(249,115,22,0.16); }
     .ch-tag.seal { color: var(--ch-seal-fg); background: var(--ch-seal-bg); }
+    .ch-tag.plan { color: var(--dim); background: transparent; box-shadow: inset 0 0 0 1px var(--pill-bg); }   /* 计划中: 不是可加也不是封仓, 只是一条写好的目标 */
     /* 深色下 Tailwind 工具类的覆盖 */
     body.dark .bg-gray-100, body.dark .bg-gray-50 { background: var(--pill-bg) !important; }
     body.dark .bg-white { background: var(--card) !important; }
@@ -91,7 +135,7 @@
     .page.active { display: block; animation: fade .25s ease; }
     @keyframes fade { from { opacity: 0; transform: translateY(6px);} to { opacity:1; transform:none; } }
     @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
-    #authModal.show, #holdingDetailModal.show, #editModal.show, #cashModal.show, #addModal.show, #fundModal.show, #calModal.show { display: flex; }
+    #moneyModal.show, #homeModal.show, #authModal.show, #holdingDetailModal.show, #editModal.show, #ruleModal.show, #cashModal.show, #addModal.show, #fundModal.show, #calModal.show { display: flex; }
     .add-type { background: #f1f5f9; color: #64748b; transition: all .15s; }
     .add-type.on { background: #0d9488; color: #fff; }
     .metric-tab { color: #9ca3af; transition: all .15s; }
@@ -111,17 +155,23 @@
     .holdings-table tbody td { border-bottom: 1px solid var(--border2); font-weight: 700; }
     .holdings-table tbody tr:last-child td { border-bottom: 0; }
     .holdings-table tbody tr { cursor: pointer; }
+    .pie-center-n { font-family: "Songti SC","STSong","Noto Serif SC",serif; font-size: 30px; font-weight: 600; line-height: 1; margin-top: 4px; }
+    .pie-center-p { font-size: 16px; }
+    .hold-sec-label { font-size: 11px; font-weight: 700; color: var(--dim); letter-spacing: .06em; margin: 4px 4px 8px; }
+    .holdings-table td.hold-sh { text-align: right; padding-right: 16px; white-space: nowrap; }
+    .hold-sh-n { font-family: "Songti SC","STSong","Noto Serif SC",serif; font-size: 22px; font-weight: 600; }
+    .hold-sh-u { font-family: "Songti SC","STSong","Noto Serif SC",serif; font-size: 12px; color: var(--dim); }
     .holdings-table .hcol-name { text-align: left; background: var(--card); padding-left: 12px; width: 31%; }
-    .holdings-table th:nth-child(2), .holdings-table td:nth-child(2) { width: 24%; }
-    .holdings-table th:nth-child(3), .holdings-table td:nth-child(3) { width: 23%; }
-    .holdings-table th:nth-child(4), .holdings-table td:nth-child(4) { width: 22%; padding-right: 12px; }
+    /* 三列: 名称靠左, 价格/日涨跌、股数/占比两列居中, 不贴右边缘 */
+    .holdings-table td:nth-child(2), .holdings-table td:nth-child(3) { text-align: center; }
     .holdings-table tbody tr:active td { background: var(--row-active); }
     .holdings-table tbody tr:active .hcol-name { background: var(--row-active); }
     /* 持仓列表分组小标题: 与卡片同底,靠色点+细分隔线融入表格,不再是割裂的灰色色块 */
     .holdings-table tr.group-row { cursor: pointer; }
     .holdings-table tr.group-row td { padding: 0; border: 0; border-top: 1px solid var(--border); background: var(--card); }
     .holdings-table tr.group-row:first-child td { border-top: 0; }
-    .holdings-table tr.group-row:active .group-bar { background: var(--row-active); }
+    .holdings-table tr.group-row:active td, .holdings-table tr.group-row:active .group-bar { background: var(--row-active); }
+    .holdings-table tr.group-row td.g-pct-cell { text-align: center; font-size: 15px; font-weight: 800; color: var(--text); }
     .group-bar { width: 100%; box-sizing: border-box;
         display: flex; align-items: center; justify-content: space-between; gap: 10px;
         padding: 15px 16px 14px; background: var(--card); }   /* 字号与首页地区卡对齐(16px), 高约 55px */
@@ -138,26 +188,45 @@
     .more-row:active td { background: var(--row-active); }
     .more-row .more-chev { font-size: 10px; }
 
-    /* ===== 冷静模式 科幻层 ===== */
-    @keyframes zenPulse { 0%,100%{opacity:.5;transform:translate(-50%,-50%) scale(1);} 50%{opacity:.8;transform:translate(-50%,-50%) scale(1.1);} }
-    @keyframes zenColorCycle {
-        0%{background:radial-gradient(circle,rgba(129,140,248,0.18) 0%,transparent 70%);}
-        25%{background:radial-gradient(circle,rgba(34,211,238,0.16) 0%,transparent 70%);}
-        50%{background:radial-gradient(circle,rgba(167,139,250,0.18) 0%,transparent 70%);}
-        75%{background:radial-gradient(circle,rgba(96,165,250,0.16) 0%,transparent 70%);}
-        100%{background:radial-gradient(circle,rgba(129,140,248,0.18) 0%,transparent 70%);}
-    }
-    .zen-halo { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:360px; height:360px; border-radius:50%; filter:blur(60px); pointer-events:none; z-index:2; animation: zenColorCycle 18s ease-in-out infinite, zenPulse 4s ease-in-out infinite; }
-    @keyframes zenOrbit { 0%{transform:translate(-50%,-50%) rotate(0);} 100%{transform:translate(-50%,-50%) rotate(360deg);} }
-    .zen-orbit-ring { position:absolute; top:50%; left:50%; width:280px; height:280px; border:1px dashed rgba(165,180,252,0.18); border-radius:50%; animation:zenOrbit 60s linear infinite; pointer-events:none; z-index:3; }
-    .zen-orbit-ring::before { content:''; position:absolute; top:-3px; left:50%; width:6px; height:6px; border-radius:50%; background:#a5b4fc; box-shadow:0 0 12px #818cf8; transform:translateX(-50%); }
-    .zen-orbit-ring-2 { width:200px; height:200px; border-color:rgba(165,180,252,0.12); animation:zenOrbit 38s linear infinite reverse; }
-    .zen-orbit-ring-2::before { background:#c084fc; box-shadow:0 0 10px #a78bfa; }
-    #zenStarfield { position:absolute; inset:0; z-index:1; pointer-events:none; }
-    .zen-scanlines { position:absolute; inset:0; pointer-events:none; z-index:4; background-image:linear-gradient(to bottom,transparent 50%,rgba(0,0,0,0.18) 50%); background-size:100% 3px; opacity:.35; mix-blend-mode:multiply; }
-    .zen-stardate { font-family:"SF Mono","Fira Code",monospace; font-size:10px; font-weight:800; color:#64748b; letter-spacing:0.3em; text-transform:uppercase; margin-top:8px; }
-    .zen-stardate .tm-val { color:#818cf8; }
+    /* ===== 冷静页 墨底: 竖排信条 + 墨圈 + 守字印 + 守候天数, 无动画; 轻点任意处返回 ===== */
+    #zenOverlay { font-family: "Songti SC","STSong","Noto Serif SC",serif; justify-content: center; }
+    .zen-stage { position: relative; width: 300px; display: flex; justify-content: center; padding-top: 62px; }
+    .zen-enso { position: absolute; top: 0; left: 0; pointer-events: none; }
+    .zen-v { position: relative; writing-mode: vertical-rl; font-size: 62px; font-weight: 700; letter-spacing: .18em; line-height: 1.1; min-height: 238px; }
+    .zen-sub { font-size: 14px; letter-spacing: .3em; margin-top: 56px; opacity: .6; }
+    .zen-days { display: flex; align-items: center; gap: 12px; margin-top: 30px; font-size: 14px; letter-spacing: .15em; }
+    .zen-days b { font-size: 26px; font-weight: 600; letter-spacing: 0; }
+    .zen-tap { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); text-align: center; font-size: 11px; letter-spacing: .3em; opacity: .35; }
     #zenOverlay.show { display: flex !important; }
+    /* 航向页定投卡 E2: 拥有股数大字(衬线), 轻点露出本月金额 */
+    .dc-own { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .dc-own-n { font-family: "Songti SC","STSong","Noto Serif SC",serif; font-size: 46px; font-weight: 600; line-height: 1; letter-spacing: -.01em; }
+    .dc-own-u { font-family: "Songti SC","STSong","Noto Serif SC",serif; font-size: 18px; }
+    .dc-peek { opacity: 0; transition: opacity .3s; }
+    /* G4「一个字 · 慢」 */
+    .dc-u2 { text-align: center; padding: 18px 4px 6px; font-family: "Kaiti SC","STKaiti","KaiTi",serif; }
+    .dc-u2-lab { font-size: 14px; color: #9ca3af; }
+    .dc-u2-n { font-size: 62px; font-weight: 600; line-height: 1; }
+    .dc-u2-u { font-size: 19px; }
+    .dc-u2-last { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 18px; font-size: 15px; }
+    .dc-u2-last > span:last-child { opacity: .85; }
+    .dc-u2-seal { width: 23px; height: 23px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; background: #b83a2c; color: #fff; flex: none; }
+    .dc-g4 { position: relative; overflow: hidden; padding: 4px 4px 6px; }
+    .dc-g4-man { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); font-family: "Songti SC","STSong","Noto Serif SC",serif; font-size: 130px; font-weight: 700; line-height: 1; opacity: .07; pointer-events: none; user-select: none; }
+    .dc-g4-n { font-family: "Songti SC","STSong","Noto Serif SC",serif; font-size: 52px; font-weight: 600; line-height: 1; letter-spacing: -.01em; }
+    .dc-seal { width: 26px; height: 26px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-family: "Songti SC","STSong",serif; font-size: 14px; background: #b83a2c; color: #fff; transform: rotate(-5deg); flex: none; }
+    .dc-seal.part { opacity: .6; }
+    .dc-last { font-family: "Songti SC","STSong","Noto Serif SC",serif; font-size: 14px; opacity: .85; }
+    /* 结构 P2: 一条细占比带 + 一行小字 */
+    .dc-struct { margin: 18px 4px 4px; }
+    .dc-sbar { position: relative; display: flex; height: 6px; border-radius: 3px; overflow: visible; background: rgba(148,163,184,.18); }
+    .dc-sbar i { display: block; height: 100%; }
+    .dc-sbar i:first-child { border-radius: 3px 0 0 3px; } .dc-sbar i:last-child { border-radius: 0 3px 3px 0; }
+    .dc-stick { position: absolute; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; opacity: .5; transform: translateX(-1px); }
+    .dc-sv { color: #111827; font-weight: 700; } body.dark .dc-sv { color: #f4f4f5; }
+    body.dark .dc-stick { background: #f4f4f5; } .dc-stick { background: #111827; }
+    .dc-seal.todo { background: transparent; color: #b83a2c; border: 1.5px dashed #b83a2c; }
+    .dc-own.peek-on .dc-peek { opacity: 1; }
 
     /* 时间范围 pills */
     .range-pill { padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; color: #8e8e93; transition: all .2s; }
@@ -199,11 +268,18 @@
     }
     #tabbar button.on { color: #0d9488; }
     #tabbar svg { width: 24px; height: 24px; }
-    #addHoldingFab { display: none; }
-    #addHoldingFab.show { display: flex; }
 
     .blur-amt { transition: filter .2s; }
-    body.masked .blur-amt { filter: blur(9px); }
+    body.masked #pageAssets .blur-amt { filter: blur(9px); }
+    /* 眼睛: 长按 2 秒才显示价格; 按住时图标慢慢变亮放大, 松手即取消; 已显示时轻点立即隐藏 */
+    .eye-btn { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
+    .eye-btn svg { transition: transform .2s, color .2s; }
+    .eye-btn.holding svg { transform: scale(1.35); color: #2dd4bf; transition: transform 2s linear, color 2s linear; }
+    body:not(.masked) .eye-btn svg { color: #2dd4bf; }
+    .px-hide { transition: filter .2s; }
+    body.masked .px-hide { filter: blur(9px); }
+    body.masked .px-only { display: none; }   /* 眼睛关着时整块不出现(持仓详情的价格与成本) */   /* 持仓详情的价格/涨跌/市值/盈亏/成本、成绩卡, 与总览页共用一个眼睛开关 */
+    body.masked #pageAssets .region-badge { display: none; }   /* 地区展开后的盈亏徽章只在眼睛打开时显示 */   /* 只模糊总览页 */
 
     /* 隐藏数字微调 */
     .region-sub { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
@@ -236,22 +312,21 @@
 <div id="ptrPill">↓ 下拉刷新</div>
 
 <!-- ========== 资产 / 收益曲线 页 ========== -->
-<section id="pageAssets" class="page active px-4 pt-3">
-    <div class="flex items-center justify-center relative h-10 mb-1">
-        <h1 class="text-[17px] font-bold">总览</h1>
-        <div class="absolute right-0 flex items-center">
-            <button onclick="enterZen()" class="text-gray-400 p-1.5" aria-label="冷静模式" title="冷静模式">
-                <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
-            </button>
+<!-- ========== 总额与走势: 原「总览」页并进持仓页, 点持仓页标题栏左边的走势图标从底部升起; 导航只剩 航向 / 持仓 ==========
+     id 仍叫 pageAssets: 打开时加 .active, 实时刷新/模糊范围等逻辑沿用 -->
+<div id="moneyModal" class="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm hidden items-end justify-center" onclick="if(event.target===this)closeMoney()">
+    <div class="card w-full max-w-md rounded-b-none rounded-t-3xl px-5" style="animation:sheetUp .25s ease;padding-top:14px;padding-bottom:calc(28px + env(safe-area-inset-bottom, 0))">
+        <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" onclick="closeMoney()"></div>
+        <section id="pageAssets">
+    <!-- 总额 + 收益(面板不要标题, ): 第一行是金额, 眼睛在同一行右边 -->
+    <div class="pb-3" style="padding-top:18px">
+        <div class="flex items-center justify-between" style="gap:10px">
+            <div id="totalBig" onclick="toggleCur()" style="cursor:pointer;font-size:40px" title="点击切换 ¥ / $" class="leading-none font-black num blur-amt">¥ --</div>
+            <button id="eyeBtn" class="eye-btn text-gray-400 p-1.5" aria-label="按住 2 秒显示金额" title="按住 2 秒显示金额">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
         </div>
-    </div>
-
-    <div id="onboardCard"></div>
-    <div id="yearCard"></div>
-    <!-- 总额 + 收益 -->
-    <div class="pt-1 pb-3">
-        <div id="totalBig" onclick="toggleCur()" style="cursor:pointer" title="点击切换 ¥ / $" class="text-[44px] leading-none font-black num blur-amt">¥ --</div>
-        <!-- 收益默认无痕收起: 收起时零元素,轻点"更新于"行展开8秒自动藏回,不持久化 -->
+        <!-- 收益默认无痕收起(防焦虑,): 收起时零元素,轻点"更新于"行展开8秒自动藏回,不持久化 -->
         <div id="pnlWrap" class="mt-3 space-y-0.5 blur-amt hidden">
             <div class="text-[15px] font-bold num"><span id="pnlAll">--</span> <span class="text-gray-400 font-semibold">全部时间</span></div>
             <div class="text-[15px] font-bold num"><span id="pnlDay">--</span> <span class="text-gray-400 font-semibold">今日</span></div>
@@ -261,98 +336,88 @@
 
     <!-- 收益曲线 (大) -->
     <div class="-mx-1">
-        <canvas id="equityChart" height="220"></canvas>
+        <canvas id="equityChart" height="180"></canvas>
     </div>
-    <div class="flex items-center justify-between mt-2 mb-5 px-1">
-        <button class="range-pill" data-r="7d" onclick="setRange('7d')">7D</button>
+    <div class="flex items-center mt-2 px-1" style="justify-content:space-around">
         <button class="range-pill" data-r="1m" onclick="setRange('1m')">1M</button>
         <button class="range-pill" data-r="6m" onclick="setRange('6m')">6M</button>
-        <button class="range-pill" data-r="ytd" onclick="setRange('ytd')">YTD</button>
         <button class="range-pill" data-r="1y" onclick="setRange('1y')">1Y</button>
         <button class="range-pill on" data-r="all" onclick="setRange('all')">ALL</button>
     </div>
-
-    <!-- 地区分布 (展开后点收益徽章可在 总收益/今日收益 间切换) -->
-    <div id="regionList" class="space-y-2.5"></div>
-</section>
+        </section>
+    </div>
+</div>
 
 <!-- ========== 持仓 / 组合 页 ========== -->
 <section id="pageHoldings" class="page px-4 pt-3">
     <div class="flex items-center justify-center relative h-10 mb-3">
-        <button onclick="toggleTheme()" class="absolute left-0 text-gray-400 p-1.5" aria-label="深色模式" title="深色/浅色">
-            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>
+        <!--H2: 左边是「总额与走势」入口, 右边是新增持仓; 深浅色切换挪到航向页 -->
+        <button onclick="openMoney()" class="absolute left-0 text-gray-400 p-1.5" aria-label="总额与走势" title="总额与走势">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>
         </button>
-        <h1 class="text-[17px] font-bold">投资组合</h1>
+        <!-- 筛选放进标题: 平时只有一个小箭头, 筛选后显示「· 地区」; 点标题弹出选项 -->
+        <h1 id="filterTitle" onclick="toggleFilterMenu(event)" class="text-[17px] font-bold" style="cursor:pointer;-webkit-tap-highlight-color:transparent;position:relative;display:inline-flex;align-items:center">投资组合<!-- 筛选签和小箭头挂在文字右侧(绝对定位), 不参与居中, 这样「投资组合」四个字本身在屏幕正中 --><span style="position:absolute;left:100%;top:0;bottom:0;margin-left:5px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><span id="filterTag" class="filter-tag"></span><svg class="filter-chev" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></h1>
+        <div id="filterMenu" class="filter-menu hidden"></div>
+        <!-- 更多: 「新增持仓」和「外观」都是很少用的动作, 收进右上角「⋯」; 首页右上角不再放按钮 -->
+        <button id="moreBtn" onclick="toggleMoreMenu(event)" class="absolute right-0 text-gray-400 p-1.5" aria-label="更多" title="更多">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
+        </button>
+        <div id="moreMenu" class="filter-menu more-menu hidden"></div>
     </div>
 
     <!-- 饼图卡片 -->
     <div class="card p-5 mb-4">
-        <div class="flex items-center justify-between mb-1">
-            <select id="filterSel" onchange="render()" class="text-[15px] font-bold bg-gray-100 rounded-full px-4 py-1.5 outline-none appearance-none pr-8" style="background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236b7280%22 stroke-width=%223%22><path d=%22M6 9l6 6 6-6%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;">
-                <option value="all">全部</option>
-                <option value="美国">美国</option>
-                <option value="中国">中国</option>
-                <option value="港股">港股</option>
-                <option value="加密货币">加密货币</option>
-            </select>
-            <button onclick="toggleMask()" class="text-gray-400 p-2" aria-label="遮掩">
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-        </div>
-        <div class="flex items-center gap-2 mt-2">
+        <select id="filterSel" onchange="render()" style="display:none">
+            <option value="all">全部</option>
+            <option value="美国">美国</option>
+            <option value="中国">中国</option>
+            <option value="港股">港股</option>
+            <option value="加密货币">加密货币</option>
+        </select>
+        <div class="flex items-center gap-2">
             <div class="relative shrink-0" style="width:170px;height:170px">
                 <canvas id="pieChart"></canvas>
                 <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div id="pieCurLabel" class="text-[11px] font-bold text-gray-400 tracking-widest">CNY</div>
-                    <div id="pieCenter" class="text-[19px] font-black num blur-amt">--</div>
+                    <div id="pieCurLabel" class="text-[13px] font-bold text-gray-400 tracking-widest">指数</div>
+                    <div id="pieCenter" class="pie-center-n">--</div>
                 </div>
             </div>
             <div id="pieLegend" class="flex-1 space-y-2" style="padding-left:20px"></div>
         </div>
     </div>
 
-    <!-- 持仓主视图: 每组一张卡(无表头), 点击行查看完整明细
-         列: 名称 | 价格 / 日涨跌(▲▼) | 股数 / 占比 | 成本 / 收益率(±) -->
+    <!-- 持仓主视图: 每组一张卡, 点击行查看完整明细
+         列: 名称 | 价格 / 日涨跌(▲▼) | 股数 / 占比 (成本与收益率 只在详情里) -->
     <div class="holdings-scroll"><div id="holdingList"></div></div>
     <div id="ibSyncStatus" class="text-[11px] text-gray-400 text-center mt-2 hidden"></div>
 
 </section>
 
-<!-- ========== 纪律 页 (本月定投 / 结构 / 个股目标 / 成绩) ========== -->
-<section id="pageDiscipline" class="page px-4 pt-3">
+<!-- ========== 首页「航向」: 最上面是「你拥有」(可在 ⋯ → 首页设置 里换成别的或关掉), 下面是自己写的三句话;
+     定投进度 / 结构 / 个股目标默认不放在首页, 在首页设置里勾了才显示。页面上没有价格和金额 ========== -->
+<section id="pageDiscipline" class="page active px-4 pt-3">
     <div class="flex items-center justify-center relative h-10 mb-3">
-        <h1 class="text-[17px] font-bold">纪律</h1>
-        <button id="aiBtn" onclick="CalmAI.open()" class="hidden absolute left-0 px-3 py-1 rounded-full text-[12px] font-bold bg-teal-50 text-teal-600">AI 顾问</button>
+        <h1 class="font-bold" style='font-family:"Kaiti SC","STKaiti","KaiTi",serif;font-size:19px;letter-spacing:4px;padding-left:4px'>航向</h1>
         <span id="mDcLock" class="absolute right-0 text-[11px] text-gray-400 font-semibold"></span>
+        <span id="aiBtn" class="hidden"></span><!-- AI 顾问是否可用的标记(checkAiEntry 控制), 入口在持仓页「⋯」里 -->
     </div>
+    <div id="onboardCard"></div>
+    <div id="yearCard"></div>
     <div id="mDcExec"></div>
     <div id="mDcAlloc"></div>
-    <div id="mDcScore"></div>
-    <div class="flex justify-center mt-4" style="gap:8px">
-        <button onclick="openAdviceM()" class="px-4 py-2 rounded-full text-[13px] font-bold bg-teal-500 text-white">本月该买什么</button>
-        <button onclick="openScorecardM()" class="px-4 py-2 rounded-full text-[13px] font-bold bg-white text-teal-600">纪律成绩单</button>
-        <button onclick="openYearM()" class="px-4 py-2 rounded-full text-[13px] font-bold bg-white text-teal-600">年度回顾</button>
-    </div>
-    <div id="dcQuote" class="dc-quote mb-24">按计划行事，不预测市场</div>
+    <div id="mDcScore" class="mb-24"></div>
 </section>
 
-<!-- 独立于带 transform 入场动画的页面容器，避免 fixed 定位在切页动画期间跳动。 -->
-<button id="addHoldingFab" onclick="showAdd()" aria-label="新增持仓"
-        class="fixed right-5 z-50 w-14 h-14 rounded-full bg-teal-500 text-white shadow-lg items-center justify-center active:scale-90 transition"
-        style="bottom: calc(14px + env(safe-area-inset-bottom, 0))">
-    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-</button>
 
 <!-- ========== 底部 Tab ========== -->
+<!--纪律页放第一个并作为默认页(打开先看过程, 不先看结果) -->
 <nav id="tabbar" data-active="0">
-    <button id="tabAssetsBtn" class="on" onclick="switchPage('assets')" aria-label="资产">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></svg>
+    <button id="tabDisciplineBtn" class="on" onclick="switchPage('discipline')" aria-label="航向">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5" fill="currentColor" fill-opacity=".25"/></svg>
     </button>
+    <!--导航只剩 航向 / 持仓; 总额与走势并进持仓页(轻点饼图中间) -->
     <button id="tabHoldingsBtn" onclick="switchPage('holdings')" aria-label="持仓">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M12 3a9 9 0 0 1 9 9h-9z" fill="currentColor" opacity="0.25"/></svg>
-    </button>
-    <button id="tabDisciplineBtn" onclick="switchPage('discipline')" aria-label="纪律">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
     </button>
 </nav>
 
@@ -376,25 +441,25 @@
 <div id="holdingDetailModal" class="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm hidden items-end justify-center" onclick="if(event.target===this)closeHoldingDetail()">
     <div class="card w-full max-w-md rounded-b-none rounded-t-3xl p-6 pb-8" style="animation:sheetUp .25s ease">
         <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5"></div>
-        <div class="flex items-start justify-between mb-5">
-            <div>
+        <!-- D2: 和首页同一种写法 —— 你拥有 N 股 + 占比·状态 + 上次种下;
+             价格/市值/成本/盈亏整块只在眼睛打开时出现(不是模糊) -->
+        <div class="flex items-start justify-between">
+            <div style="min-width:0">
                 <h3 id="detailName" class="text-[19px] font-bold leading-tight">--</h3>
                 <p id="detailSymbol" class="text-[12px] text-gray-400 mt-1">--</p>
-                <p id="detailChannel" class="text-[11px] mt-1.5" style="display:none;align-items:center;gap:6px;flex-wrap:wrap"></p>
             </div>
             <button onclick="closeHoldingDetail()" class="text-gray-400 p-2" aria-label="关闭">✕</button>
         </div>
-        <div class="grid grid-cols-2 gap-3 mb-5">
-            <div class="bg-gray-50 rounded-xl p-3"><div class="text-[11px] text-gray-400">当前价格</div><div id="detailPrice" class="num text-[16px] font-black mt-1">--</div></div>
-            <div class="bg-gray-50 rounded-xl p-3"><div class="text-[11px] text-gray-400">今日涨跌</div><div id="detailDay" class="num text-[16px] font-black mt-1">--</div></div>
-            <div class="bg-gray-50 rounded-xl p-3"><div class="text-[11px] text-gray-400">总市值 · 占比</div><div id="detailMarketValue" class="num text-[16px] font-black mt-1 blur-amt">--</div></div>
-            <div class="bg-gray-50 rounded-xl p-3"><div class="text-[11px] text-gray-400">持仓盈亏 · 收益率</div><div id="detailPnl" class="num text-[16px] font-black mt-1 blur-amt">--</div></div>
+        <div class="text-[12px] font-bold text-gray-400" style="margin-top:16px">你拥有</div>
+        <div style="margin-top:6px"><span id="detailShares" style='font-family:"Songti SC","STSong","Noto Serif SC",serif;font-size:48px;font-weight:600;line-height:1'>--</span><span id="detailUnit" style='font-family:"Songti SC","STSong","Noto Serif SC",serif;font-size:17px'> 股</span><span id="detailStatus" class="text-[12px] text-gray-400" style="margin-left:10px"></span></div>
+        <div id="detailLastBuy" class="flex items-center" style="gap:10px;margin-top:14px;display:none"><span class="dc-seal">种</span><span id="detailLastBuyTxt" style='font-family:"Songti SC","STSong","Noto Serif SC",serif;font-size:14px;opacity:.85'></span></div>
+        <div id="detailPriceBox" class="px-only bg-gray-50 rounded-2xl px-4 py-2" style="margin-top:16px">
+            <div class="flex justify-between py-2 text-[13px]"><span class="text-gray-400">当前价格 · 今日</span><span class="num font-bold"><span id="detailPrice">--</span> <span id="detailDay" style="font-size:11px">--</span></span></div>
+            <div class="flex justify-between py-2 text-[13px]"><span class="text-gray-400">总市值</span><span id="detailMarketValue" class="num font-bold">--</span></div>
+            <div class="flex justify-between py-2 text-[13px]"><span class="text-gray-400">单位成本 · 总成本</span><span class="num font-bold"><span id="detailUnitCost">--</span> · <span id="detailTotalCost">--</span></span></div>
+            <div class="flex justify-between py-2 text-[13px]"><span class="text-gray-400">持仓盈亏</span><span id="detailPnl" class="num font-bold">--</span></div>
         </div>
-        <div class="bg-gray-50 rounded-2xl px-4 py-2 mb-5">
-            <div class="flex justify-between py-2 text-[13px]"><span class="text-gray-400">持仓数量</span><span id="detailShares" class="num font-bold">--</span></div>
-            <div class="flex justify-between py-2 text-[13px]"><span class="text-gray-400">单位成本</span><span id="detailUnitCost" class="num font-bold">--</span></div>
-            <div class="flex justify-between py-2 text-[13px]"><span class="text-gray-400">总成本</span><span id="detailTotalCost" class="num font-bold blur-amt">--</span></div>
-        </div>
+        <div style="height:18px"></div>
         <button id="detailFundBtn" onclick="detailOpenFund()" class="hidden w-full mb-3 py-3.5 rounded-2xl bg-indigo-50 text-indigo-600 font-bold">🪙 基金申购 / 校准份额</button>
         <button onclick="detailOpenEdit()" class="w-full py-3.5 rounded-2xl bg-teal-500 text-white font-bold">修改持仓</button>
     </div>
@@ -428,6 +493,39 @@
             <button onclick="deleteHolding()" class="px-5 py-3.5 rounded-2xl bg-red-50 text-red-500 font-bold">删除</button>
             <button onclick="closeEdit()" class="flex-1 py-3.5 rounded-2xl bg-gray-100 text-gray-600 font-bold">取消</button>
             <button onclick="submitEdit()" class="flex-1 py-3.5 rounded-2xl bg-teal-500 text-white font-bold">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 首页设置 ========== -->
+<div id="homeModal" class="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm hidden items-end justify-center" onclick="if(event.target===this)closeHomeSet()">
+    <div class="card w-full max-w-md rounded-b-none rounded-t-3xl p-6 pb-8" style="animation:sheetUp .25s ease;max-height:90vh;overflow-y:auto">
+        <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5"></div>
+        <h3 class="text-[18px] font-bold leading-tight mb-5">首页设置</h3>
+        <label class="block text-[13px] font-bold text-gray-500 mb-1.5">首页最上面显示</label>
+        <select id="hsHero" onchange="homeSetChanged()" class="w-full bg-gray-100 rounded-2xl px-4 py-3.5 text-[16px] outline-none focus:ring-2 focus:ring-teal-300 mb-4 appearance-none">
+            <option value="auto">自动（定投的指数；没写定投就是最大的持仓）</option>
+            <option value="shares">某一只持仓的数量</option>
+            <option value="total">总资产（默认模糊）</option>
+            <option value="none">什么都不显示</option>
+        </select>
+        <div id="hsSymWrap" class="mb-4">
+            <label class="block text-[13px] font-bold text-gray-500 mb-1.5">哪一只</label>
+            <select id="hsSym" class="w-full bg-gray-100 rounded-2xl px-4 py-3.5 text-[16px] outline-none focus:ring-2 focus:ring-teal-300 appearance-none"></select>
+        </div>
+        <label class="block text-[13px] font-bold text-gray-500 mb-1.5">数字下面的一句说明（可不填）</label>
+        <input id="hsCaption" maxlength="30" placeholder="比如：美国五百家公司的一小块" class="w-full bg-gray-100 rounded-2xl px-4 py-3.5 text-[16px] outline-none focus:ring-2 focus:ring-teal-300 mb-4">
+        <label class="block text-[13px] font-bold text-gray-500 mb-1.5">写给自己的三句话（可不填，第一句最大）</label>
+        <input id="hsL1" maxlength="16" placeholder="比如：买股票就是买公司" class="w-full bg-gray-100 rounded-2xl px-4 py-3.5 text-[16px] outline-none focus:ring-2 focus:ring-teal-300 mb-2">
+        <input id="hsL2" maxlength="16" placeholder="比如：不预测市场" class="w-full bg-gray-100 rounded-2xl px-4 py-3.5 text-[16px] outline-none focus:ring-2 focus:ring-teal-300 mb-2">
+        <input id="hsL3" maxlength="16" placeholder="比如：慢就是快" class="w-full bg-gray-100 rounded-2xl px-4 py-3.5 text-[16px] outline-none focus:ring-2 focus:ring-teal-300 mb-4">
+        <label class="block text-[13px] font-bold text-gray-500 mb-1.5">首页还要显示（默认都不显示）</label>
+        <label class="flex items-center text-[15px] py-1.5" style="gap:10px"><input id="hsDca" type="checkbox" style="width:18px;height:18px"> 本月定投进度</label>
+        <label class="flex items-center text-[15px] py-1.5" style="gap:10px"><input id="hsStruct" type="checkbox" style="width:18px;height:18px"> 结构（指数和个股的占比）</label>
+        <label class="flex items-center text-[15px] py-1.5" style="gap:10px"><input id="hsTargets" type="checkbox" style="width:18px;height:18px"> 个股目标（买够了没有）</label>
+        <div class="flex gap-3 mt-6">
+            <button onclick="closeHomeSet()" class="flex-1 py-3.5 rounded-2xl bg-gray-100 text-gray-600 font-bold">取消</button>
+            <button onclick="saveHomeSet()" class="flex-1 py-3.5 rounded-2xl bg-teal-500 text-white font-bold">保存</button>
         </div>
     </div>
 </div>
@@ -532,31 +630,14 @@
 </div>
 
 <!-- ========== 冷静模式 ========== -->
-<div id="zenOverlay" class="fixed inset-0 z-[9999] flex-col items-center justify-center text-white overflow-hidden" style="display:none;background:#050508">
-    <canvas id="zenStarfield"></canvas>
-    <div class="zen-halo"></div>
-    <div class="zen-orbit-ring"></div>
-    <div class="zen-orbit-ring zen-orbit-ring-2"></div>
-    <div class="zen-scanlines"></div>
-    <div class="relative flex flex-col items-center text-center px-6" style="z-index:5;gap:3.5rem">
-        <div style="opacity:.55"><span class="text-[9px] font-black uppercase" style="letter-spacing:0.6em;color:#94a3b8">Silent Meditation</span></div>
-        <div class="flex flex-col gap-6">
-            <h1 class="text-2xl font-light" style="letter-spacing:0.15em;color:#cbd5e1">你无法预测涨跌</h1>
-            <h1 class="text-5xl font-black italic text-transparent" style="background:linear-gradient(to right,#a5b4fc,#bfdbfe,#a5b4fc);-webkit-background-clip:text;background-clip:text;letter-spacing:-0.01em">按计划定投</h1>
-            <h1 class="text-2xl font-light" style="letter-spacing:0.15em;color:#cbd5e1">长期持有</h1>
-        </div>
-        <div class="flex flex-col items-center gap-2">
-            <p class="text-[9px] font-black uppercase" style="letter-spacing:0.4em;color:#64748b">已守候时间</p>
-            <div class="flex items-baseline gap-2.5">
-                <span id="zenHoldingDays" class="num" style="font-size:54px;font-weight:900;color:rgba(129,140,248,0.85);letter-spacing:-0.03em;line-height:1">--</span>
-                <span class="text-sm font-bold tracking-widest" style="color:#64748b">DAYS</span>
-            </div>
-            <div class="zen-stardate">STARDATE <span class="tm-val" id="zenStardate">--</span></div>
-        </div>
-        <button onclick="exitZen()" class="px-9 py-3.5 rounded-full active:scale-95 transition" style="border:1px solid rgba(255,255,255,0.12)">
-            <span class="text-[9px] font-black uppercase" style="letter-spacing:0.35em;color:#94a3b8">退出冷静模式</span>
-        </button>
+<div id="zenOverlay" class="fixed inset-0 z-[9999] flex-col items-center overflow-hidden" style="display:none;background:#15130f;color:#e9e2d2" onclick="exitZen()">
+    <div class="zen-stage">
+        <svg class="zen-enso" width="300" height="300" viewBox="0 0 300 300" aria-hidden="true"><path d="M150 22 A128 128 0 1 1 62 58" fill="none" stroke="#e9e2d2" stroke-opacity=".10" stroke-width="15" stroke-linecap="round"/></svg>
+        <div class="zen-v" id="zenCreedMain">慢就是快</div>
     </div>
+    <div class="zen-sub" id="zenCreedSub">不预测市场</div>
+    <div class="zen-days"><span class="dc-seal">守</span><span>已守候 <b id="zenHoldingDays">--</b> 天</span></div>
+    <div class="zen-tap">轻点返回</div>
 </div>
 
 <script>
@@ -570,7 +651,7 @@ let equityChart = null, pieChart = null;
 let historyLoadedRange = null;
 let historyLoadPromise = null;
 const historyRangeCache = new Map();
-let masked = localStorage.getItem('mMask') === '1';
+let masked = true;   //价格/金额默认隐藏, 每次打开都从隐藏开始; 只有总览页的眼睛能打开, 切后台自动恢复隐藏(不再记忆)
 
 const PALETTE = ['#2dd4bf','#a8a29e','#92766a','#3b82f6','#ef4444','#22c55e','#f59e0b','#f9a8d4','#eab308','#a855f7','#06b6d4','#fb923c','#94a3b8'];
 const REGION_COLOR = { '美国':'#ef4444', '中国':'#2dd4bf', '港股':'#8b5cf6', '加密货币':'#f59e0b', '其他':'#3b82f6' };
@@ -639,22 +720,24 @@ function flatten(d){
 
 // classifyAllocationBucket 来自 /classify.js(与服务端共享同一份白名单)
 
-// 按语义组聚合并配色(聚合口径来自 classify.js classifyPieGroup)
-// 警戒标的行色条标橙(isWarningHolding 覆写)
-const BUCKET_PALETTE = { '纳指指数类':'#6366f1', '标普':'#818cf8', '加密资产':'#8b5cf6', '现金':'#94a3b8', '观察仓':'#14b8a6', '其他':'#a1a1aa' };   // 其他=警戒仓+赠股   // 标普用纳指同色系(浅靛蓝)→ 饼图里软分组成"指数"一坨
+// 按语义组聚合并配色(与电脑端 updateCharts 一致, 聚合口径来自 classify.js classifyPieGroup)
+// 警戒并入观察仓(饼图/分组不再单列, classify.js v10), 警戒标的行色条仍标橙(isWarningHolding 覆写)
+const BUCKET_PALETTE = { '指数':'#6366f1', '纳指指数类':'#6366f1', '标普':'#818cf8', '加密资产':'#8b5cf6', '现金':'#94a3b8', '观察仓':'#14b8a6', '其他':'#a1a1aa' };   // 其他=警戒仓+赠股   // 标普用纳指同色系(浅靛蓝)→ 饼图里软分组成"指数"一坨
 const STOCK_PALETTE = ['#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6','#a855f7','#eab308','#3b82f6'];
 function buildGroups(items, total){
     const map = {}, groupOfBucket = {};
     items.forEach(x => {
         const w = total > 0 ? x.mvCNY / total * 100 : 0;         // 占比 → 观察仓/核心个股按它分流
-        const g = x.isCash ? '现金' : classifyPieGroup(x, w, ruleOf(x.symbol));    // classifyPieGroup 来自 /classify.js; 设了建仓规则的小仓也算个股
+        let g = x.isCash ? '现金' : classifyPieGroup(x, w, ruleOf(x.symbol));    // classifyPieGroup 来自 /classify.js; 有建仓规则的小仓也算个股
+        if (g === '现金' || g === '加密资产' || g === '观察仓') g = '其他';
+        if (g === '纳指指数类' || g === '标普') g = '指数';   //饼图里纳指、标普合成一块「指数」(下面列表照样逐只列出)   //饼图里现金、加密并入「其他」, 与持仓列表分组一致(只改手机端, classify.js 不动)
         groupOfBucket[x.bucket] = g;
         map[g] = (map[g] || 0) + x.mvCNY;
     });
-    const isIdx = n => n === '纳指指数类' || n === '标普';
+    const isIdx = n => n === '指数' || n === '纳指指数类' || n === '标普';
     const groups = Object.entries(map).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }))
         .sort((a, b) => {
-            if ((a.name === '现金') !== (b.name === '现金')) return a.name === '现金' ? 1 : -1;   // 现金永远排最后
+            if ((a.name === '其他') !== (b.name === '其他')) return a.name === '其他' ? 1 : -1;   // 「其他」(含现金)永远排最后
             const ai = isIdx(a.name), bi = isIdx(b.name);
             if (ai !== bi) return ai ? -1 : 1;   // 指数两腿(纳指/标普)排最前 → 软分组相邻成一坨
             return b.value - a.value;
@@ -666,7 +749,7 @@ function buildGroups(items, total){
         colorByGroup[g.name] = g.color;
     });
     // colorOf 仍按原 bucket 作键 —— 持仓行左侧色条经 x.bucket 查色:
-    // 观察仓统一 teal、警戒统一橙, 行色条与饼图切片、列表分组三处同色系
+    // 观察仓三只统一 teal、警戒两只统一橙, 行色条与饼图切片、列表分组三处同色系
     const colorOf = {};
     Object.entries(groupOfBucket).forEach(([b, g]) => { colorOf[b] = colorByGroup[g] || '#94a3b8'; });
     // 警戒标的并入观察仓后行色条仍标橙
@@ -726,8 +809,7 @@ function render({ realtimeOnly = false } = {}){
     const { groups, colorOf } = buildGroups(view, viewTotal);
     view.forEach(x => x.color = colorOf[x.bucket] || '#94a3b8');
 
-    document.getElementById('pieCenter').textContent = fmt0(toBase(viewTotal));
-    document.getElementById('pieCurLabel').textContent = displayCur;
+    setPieCenter(view, viewTotal);
     renderPie(groups);
     renderLegend(groups, viewTotal);
     renderHoldingList(view, viewTotal);
@@ -736,6 +818,11 @@ function render({ realtimeOnly = false } = {}){
     if (fundTarget && document.getElementById('fundModal').classList.contains('show')) renderFundOrders();
 }
 
+// 饼图中间: 不显示金额, 显示指数占比(与航向页结构线同口径)
+function setPieCenter(view, viewTotal){
+    const idx = view.reduce((s, x) => s + (_isIdx(x) ? x.mvCNY : 0), 0);
+    document.getElementById('pieCenter').innerHTML = viewTotal > 0 ? Math.round(idx / viewTotal * 100) + '<span class="pie-center-p">%</span>' : '--';   // P2→A1: 衬线 30px, % 小一号
+}
 function updateMobileLiveNodes(all, totalCNY, assetsVisible, holdingsVisible){
     if (assetsVisible) {
         updateMetricTabUI();
@@ -747,7 +834,7 @@ function updateMobileLiveNodes(all, totalCNY, assetsVisible, holdingsVisible){
         const viewTotal = view.reduce((s, x) => s + x.mvCNY, 0);
         const { groups, colorOf } = buildGroups(view, viewTotal);
         view.forEach(x => x.color = colorOf[x.bucket] || '#94a3b8');
-        document.getElementById('pieCenter').textContent = fmt0(toBase(viewTotal));
+        setPieCenter(view, viewTotal);
         renderPie(groups);
         renderLegend(groups, viewTotal);
         renderHoldingList(view, viewTotal);
@@ -795,7 +882,7 @@ function metricBadge(it){
     } else {
         txt = `${val >= 0 ? '+' : '-'}${baseSym()}${fmt0(toBase(Math.abs(val)))}`;
     }
-    return `<span onclick="toggleRegionMetric(event)" class="num inline-block mt-1 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-md blur-amt" style="background:${bg}">${txt}</span>`;
+    return `<span onclick="toggleRegionMetric(event)" class="region-badge num inline-block mt-1 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-md blur-amt" style="background:${bg}">${txt}</span>`;
 }
 
 // ===== 地区分布行 (可展开 + 收益徽章) =====
@@ -808,7 +895,10 @@ function renderRegions(all, totalCNY){
         groups[x.region].items.push(x);
     });
     const rows = REGION_ORDER.filter(r => groups[r]).map(r => ({ name: r, ...groups[r] }));
+    const regTot = rows.reduce((s, g) => s + g.value, 0);   // 地区和展开的每只都显示占比(不含现金, 加起来 100%), 不再显示金额
+    const pctOf = v => regTot > 0 ? (v / regTot * 100).toFixed(1) + '%' : '--';
     const el = document.getElementById('regionList');
+    if (!el) return;   // 地区列表已去掉
     el.innerHTML = rows.map(g => {
         const color = REGION_COLOR[g.name] || '#94a3b8';
         const flag = REGION_FLAG[g.name] || '';
@@ -821,16 +911,16 @@ function renderRegions(all, totalCNY){
                     <div class="text-[11px] text-gray-400 truncate">${esc(it.name)}</div>
                 </div>
                 <div class="text-right ml-2 shrink-0">
-                    <div class="num font-bold text-[14px] leading-tight blur-amt">${baseSym()} ${fmt0(toBase(it.mvCNY))}</div>
+                    <div class="num font-bold text-[14px] leading-tight">${pctOf(it.mvCNY)}</div>
                     ${metricBadge(it)}
                 </div>
             </div>`).join('');
         return `
         <div data-region-key="${esc(g.name)}" class="card overflow-hidden">
-            <button class="region-row w-full flex items-center px-4 py-3.5" aria-expanded="${expanded}" onclick="toggleRegion(decodeURIComponent('${encodeURIComponent(g.name).replace(/'/g, '%27')}'))">
+            <button class="region-row w-full flex items-center px-4 py-3.5" aria-expanded="${expanded}" onclick="toggleRegion('${g.name.replace(/'/g, "\\'")}')">
                 <span class="w-2.5 h-2.5 rounded-full mr-3 shrink-0" style="background:${color}"></span>
                 <span class="flex-1 text-left text-[16px] font-bold">${esc(g.name)}</span>
-                <span data-live-field="regionValue" class="num text-[16px] font-bold mr-2 blur-amt">${baseSym()} ${fmt0(toBase(g.value))}</span>
+                <span data-live-field="regionValue" class="num text-[16px] font-bold mr-2">${pctOf(g.value)}</span>
                 <svg class="chev text-gray-300 transition-transform" style="transform:${expanded ? 'rotate(180deg)' : 'none'}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
             </button>
             <div class="region-sub border-t border-gray-50">${sub}</div>
@@ -1006,24 +1096,64 @@ function renderLegend(groups, total){
 }
 
 // ===== 持仓明细列表 =====
-// 分组: 指数 → 个股 → 观察 → 其他(指数置顶, 让版面权重和资产权重一致, 个股放后面减少冲动; 与饼图 classifyPieGroup 同口径)
+// 分组: 指数 → 个股 → 观察 → 其他(指数置顶=版面权重对齐资产权重57%, 个股退居二屏防冲动;
+// 警戒同日并入观察组、行色条标橙。原核心个股置顶五组版=。与饼图 classifyPieGroup 同口径)
 // 核心/观察按占比分: 权益个股占比≥5%=核心, <5%=观察仓; 警戒=A股非指数的主动基金/行业ETF。
+// 设了「看占比」规则的个股(建仓中)不论占比都进个股组, 与 classifyPieGroup 同口径。
+const _hasBuildRule = x => { const r = ruleOf(x.symbol); return !!(r && r.type === 'band'); };
 const _isIdx = x => x.bucket === '纳指指数类' || x.bucket === '标普';
 const _isCrypto = x => x.bucket === '加密资产';
 const _isWarn = x => !x.isCash && !_isIdx(x) && !_isCrypto(x) && isWarningHolding(x); // isWarningHolding 来自 classify.js
 const _isOther = x => !x.isCash && isOtherHolding(x);                                   // 赠股等非决策持仓(isOtherHolding 来自 classify.js)
 const _isStock = x => !x.isCash && !_isIdx(x) && !_isCrypto(x) && !_isWarn(x) && !_isOther(x);   // 权益个股(非指数/警戒/加密/现金/赠股)
-const _hasBuildRule = x => { const r = ruleOf(x.symbol); return !!(r && r.type === 'band'); };   // 设了「看占比」规则 = 打算建仓
 const HOLD_SECTIONS = [
     { key: '指数',    color: '#6366f1', minPct: 5, byChannel: true, test: _isIdx },   // byChannel: 默认只露可加; plan.json 未到时退回 minPct
-    { key: '个股',    color: '#f59e0b', test: x => _isStock(x) && (x._w >= 5 || _hasBuildRule(x)) },   // 占比 ≥5% 或设了建仓规则的个股
-    { key: '观察',    color: '#14b8a6', test: x => _isStock(x) && x._w < 5 && !_hasBuildRule(x) },   // 观察仓: 占比 <5% 且没设建仓规则的小仓个股
-    { key: '其他',    color: '#94a3b8', test: x => x.isCash || _isCrypto(x) || _isWarn(x) || _isOther(x) },   // 现金+加密+警戒仓+非决策持仓(groups.other), 与纪律页个股桶口径一致
+    { key: '个股',    color: '#f59e0b', test: x => _isStock(x) && (x._w >= 5 || _hasBuildRule(x)) },   //原名"核心个股"太长,列表显示改"个股"
+    { key: '其他',    color: '#94a3b8', test: x => x.isCash || _isCrypto(x) || _isWarn(x) || _isOther(x) || (_isStock(x) && x._w < 5 && !_hasBuildRule(x)) },   //观察仓(没设目标的小仓个股, 如美光)并进「其他」, 不再单独一组;   //现金+加密+警戒仓+赠股, 与纪律页个股桶口径一致(原 08-07 警戒并入观察作废)
 ];
 const collapsedSections = new Set(['个股', '观察', '指数', '其他']); // 全部默认折叠,进页面只看汇总条
 const smallExpanded = new Set(); // 组内小仓位(低于 minPct)默认藏进"更多", 点击展开; 会话内记忆
 let _holdView = [], _holdTotal = 0;
-const HOLD_COLS = '<colgroup><col style="width:31%"><col style="width:24%"><col style="width:23%"><col style="width:22%"></colgroup>';   // 无表头后列宽由此固定
+//列表不再显示成本价和累计收益率(买的是生意, 和成本无关), 只在点开详情里看; 三列
+const HOLD_COLS = '<colgroup><col style="width:44%"><col style="width:28%"><col style="width:28%"></colgroup>';   // 无表头后列宽由此固定; 价格、股数两列居中
+// 「你的公司」: 一张卡里每家一行 —— 左: 名称 + 「占 x% · 状态」(超上限时占比标黄); 右: 衬线股数。点一行看详情。
+// 状态: 持股多于目标 → 「目标 N 股」; 够了 → 「已买够」; 不够 → 「还差 N 股」; 没设目标只写占比。还没买的计划目标排最后(灰)。
+// 常见公司的名称和一句话生意, 给「你的公司」和持仓详情用; 规则里写了 company / biz 的以规则为准, 查不到就用持仓自己的名称
+const COMPANY_INFO = {
+    GOOGL: ['Alphabet', '谷歌', '搜索、YouTube、安卓、云计算'], GOOG: ['Alphabet', '谷歌', '搜索、YouTube、安卓、云计算'],
+    AAPL: ['Apple', '苹果', 'iPhone、Mac、应用和服务'], MSFT: ['Microsoft', '微软', 'Windows、Office、Azure 云'],
+    AMZN: ['Amazon', '亚马逊', '电商和 AWS 云'], META: ['Meta', '', 'Facebook、Instagram、WhatsApp'],
+    NVDA: ['NVIDIA', '英伟达', 'AI 芯片和 GPU'], TSLA: ['Tesla', '特斯拉', '电动车、储能、自动驾驶'],
+    'BRK.B': ['Berkshire', '伯克希尔', '保险、铁路、能源和一篮子上市公司'], KO: ['Coca-Cola', '可口可乐', '饮料'],
+    COST: ['Costco', '开市客', '会员制仓储超市'], JNJ: ['Johnson & Johnson', '强生', '医药和医疗器械'],
+    '600519': ['贵州茅台', '', '白酒'], '00700': ['腾讯控股', '', '社交、游戏、支付和云'],
+};
+function companySectionHtml(items, total){
+    const symCfg = (planDoc && planDoc.channels && planDoc.channels.symbols) || {};
+    const singleCap = (planDoc && planDoc.targetAllocation && planDoc.targetAllocation.singleCapPct) || 20;
+    const tOf = x => Number((symCfg[String(x.symbol || '').toUpperCase()] || {}).targetShares) || 0;
+    const trim = x => tOf(x) > 0 && (Number(x.shares) || 0) > tOf(x) + 0.5;
+    const nameOf = (sym, fallback) => { const c = symCfg[sym] || {}, info = COMPANY_INFO[sym] || []; const full = c.company || info[0] || fallback || sym; const cn = info.length ? info[1] : ''; return { full, cn: cn === full ? '' : cn }; };
+    const held = new Set(items.map(x => String(x.symbol || '').toUpperCase()));
+    if (!items.length) return '';
+    const subPct = total > 0 ? items.reduce((s, x) => s + x.mvCNY, 0) / total * 100 : 0;
+    const cell = (dot, nm, sub) => `<td class="hcol-name" colspan="2"><div style="display:flex;align-items:center;gap:9px">
+            <span style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:${dot}"></span>
+            <div style="min-width:0;flex:1"><div class="truncate"><span class="text-[15px] font-extrabold leading-tight">${esc(nm.full)}</span>${nm.cn ? ` <span class="text-[12px] font-bold text-gray-400">${esc(nm.cn)}</span>` : ''}</div>
+            <div class="text-[11px] font-semibold text-gray-400">${sub}</div></div></div></td>`;
+    const rows = items.slice().sort((a, b) => (trim(a) - trim(b)) || (b.mvCNY - a.mvCNY)).map(x => {
+        const sym = String(x.symbol || '').toUpperCase(), c = symCfg[sym] || {}, t = tOf(x), sh = Number(x.shares) || 0, w = x._w || 0;
+        const cap = c.type === 'band' ? Number(c.sealAtPct) || singleCap : singleCap;
+        const st = t > 0 ? (sh > t + 0.5 ? `目标 ${t} 股` : sh >= t - 0.5 ? '已买够' : `还差 ${Math.round(t - sh)} 股`) : '';
+        const ch = channelStateOf(x);
+        const open = ch && ch.st === 'open' ? ` <span class="ch-tag open">${ch.label}</span>` : '';
+        const shTxt = sh >= 1000 ? fmt0(sh) : (Math.abs(sh - Math.round(sh)) < 0.05 ? String(Math.round(sh)) : sh.toFixed(1));
+        return `<tr data-ai="${x.ai}" data-hi="${x.hi}" data-holding-key="${x.ai}-${x.hi}">${cell(x.color, nameOf(sym, shortHoldingName(x.name || sym)),
+            `占 <span style="${t > 0 && w > cap ? 'color:#d97706' : ''}">${w.toFixed(1)}%</span>${st ? ' · ' + st : ''}${open}`)}
+            <td class="hold-sh"><span class="hold-sh-n">${shTxt}</span><span class="hold-sh-u"> ${shareUnit(x)}</span></td></tr>`;
+    });
+    return `<div class="hold-sec-label">你的公司 · ${subPct.toFixed(1)}%</div><div class="card overflow-hidden hold-card"><table class="holdings-table">${HOLD_COLS}<tbody>${rows.join('')}</tbody></table></div>`;
+}
 function renderHoldingList(view, total){
     _holdView = view; _holdTotal = total;
     // 持仓占比统一使用当前视图总额，现金也计入分母。
@@ -1032,25 +1162,21 @@ function renderHoldingList(view, total){
     const el = document.getElementById('holdingList');
     if (!view.length) { el.innerHTML = '<div class="card text-center text-gray-300 text-sm" style="padding:32px">暂无持仓</div>'; return; }
     let html = '';
-    for (const sec of HOLD_SECTIONS) {
+    // B1: 「你的公司」排最前、一直展开(每家一行, 带目标状态); 指数、其他照旧折叠
+    const ordered = HOLD_SECTIONS.slice().sort((a, b) => (b.key === '个股') - (a.key === '个股'));
+    for (const sec of ordered) {
         const items = view.filter(sec.test);             // view 已按 CNY 市值降序，组内顺序保留
+        if (sec.key === '个股') { html += companySectionHtml(items, total); continue; }
         if (sec.key === '其他') items.sort((a, b) => ((a.isCash ? 1 : 0) - (b.isCash ? 1 : 0)) || (b.mvCNY - a.mvCNY)); // 现金行沉底
         if (!items.length) continue;
         const subMv = items.reduce((s, x) => s + x.mvCNY, 0);
         const subPct = total > 0 ? subMv / total * 100 : 0;
-        const subChg = items.reduce((s, x) => s + (x.changeCNY || 0), 0);
-        const base = subMv - subChg;                     // 今日涨跌% = 涨跌额 / 昨日市值
-        const chgPct = base > 0 ? subChg / base * 100 : 0;
-        const dCls = subChg >= 0 ? 'up' : 'down';
         const collapsed = collapsedSections.has(sec.key);
         html += `<div class="card overflow-hidden hold-card"><table class="holdings-table">${HOLD_COLS}<tbody>`;
-        html += `<tr class="group-row${collapsed ? ' collapsed' : ''}" data-sec="${esc(sec.key)}"><td colspan="4"><div class="group-bar">
-            <span class="g-l"><span class="g-chev">▾</span><span class="g-dot" style="background:${sec.color}"></span>${sec.key}<span class="g-pct">${subPct.toFixed(1)}%</span></span>
-            <span class="g-r">
-                <span class="g-mv blur-amt">${baseSym()}${fmt0(toBase(subMv))}</span>
-                <span class="g-day ${dCls}">${subChg >= 0 ? '▲' : '▼'}${Math.abs(chgPct).toFixed(2)}%</span>
-            </span>
-        </div></td></tr>`;
+        //分组标题只留占比(不显示组市值和今日涨跌); 占比放右边, 和下面各行的占比对齐在同一列(G2)
+        html += `<tr class="group-row${collapsed ? ' collapsed' : ''}" data-sec="${esc(sec.key)}"><td><div class="group-bar">
+            <span class="g-l"><span class="g-chev">▾</span><span class="g-dot" style="background:${sec.color}"></span>${sec.key}</span>
+        </div></td><td></td><td class="g-pct-cell num">${subPct.toFixed(1)}%</td></tr>`;
         if (!collapsed) {
             // 小仓位收纳: 低于组阈值的藏进"更多"行; 无行情持仓豁免——必须永远可见
             let show = items, hidden = [];
@@ -1064,7 +1190,7 @@ function renderHoldingList(view, total){
             html += show.map(x => holdingRowHtml(x, total)).join('');
             if (hidden.length) {
                 const on = smallExpanded.has(sec.key);
-                html += `<tr class="more-row" data-more="${esc(sec.key)}"><td colspan="4">${on ? '收起' : '展开'} <span class="more-chev">${on ? '▴' : '▾'}</span></td></tr>`;
+                html += `<tr class="more-row" data-more="${esc(sec.key)}"><td colspan="3">${on ? '收起' : '展开'} <span class="more-chev">${on ? '▴' : '▾'}</span></td></tr>`;
             }
         }
         html += `</tbody></table></div>`;
@@ -1142,50 +1268,49 @@ function ensureNavLoaded(code){
 }
 function channelTagHtml(x){
     const r = channelStateOf(x);
-    return r ? `<span class="ch-tag ${r.st}">${r.label}</span>` : '';
+    return r && r.st === 'open' ? `<span class="ch-tag ${r.st}">${r.label}</span>` : '';   // 列表只标「可加」, 「封仓」不显示(满屏封仓是噪音)
+}
+// N1: 列表里的名称去掉基金后缀 —— (QDII)、发起/发起式、A/C/I 份额字母、结尾的「指数ETF」;
+// 最长约「南方纳斯达克100指数」; 完整名称在详情里照常显示
+function shortHoldingName(n){
+    const t = String(n).replace(/[（(]QDII[)）]/gi, '').replace(/发起式?/g, '').replace(/指数ETF$/, '').replace(/(指数|主题|混合|股票)[ACI]$/, '$1').trim();
+    return t || String(n);
+}
+// 数量单位: 加密货币=枚; 场外基金和 A 股场内 ETF/LOF=份; 其余=股
+function shareUnit(x){
+    if (x.market === 'crypto') return '枚';
+    if (x.market === 'fund') return '份';
+    if ((x.market === 'sh' || x.market === 'sz') && /^(5|15|16|18)/.test(String(x.symbol || ''))) return '份';
+    return '股';
 }
 function holdingRowHtml(x, total){
     {
         const sym = curSym(x.cur);
         const weight = x._w || 0;   // 含现金口径(renderHoldingList 已算好)
+        // H2: 公司名做主标题, 下面一小行「代码 · 占比」; 右边衬线大字股数; 不显示价格和当日涨跌
+        const sub = x.isCash ? `占 ${weight.toFixed(1)}%` : `${esc(x.symbol || '')} · 占 ${weight.toFixed(1)}%`;
+        const shown = x.isCash ? '现金' : shortHoldingName(x.name || x.symbol || '');   // 现金行标题固定写「现金」(原来会显示成「全部账户」)
         const nameCell = `
-            <td class="hcol-name">
+            <td class="hcol-name" colspan="2">
                 <div style="display:flex;align-items:center;gap:7px">
                     <span style="width:4px;height:30px;border-radius:2px;flex:0 0 auto;background:${x.color}"></span>
                     <div style="min-width:0;flex:1">
-                        <div style="display:flex;align-items:center;gap:5px;min-width:0"><span class="text-[15px] font-extrabold leading-tight truncate">${esc(x.symbol || x.name)}</span>${channelTagHtml(x)}</div>
-                        <div class="text-[11px] font-semibold text-gray-400 truncate">${esc(x.name)}</div>
+                        <div style="display:flex;align-items:center;gap:5px;min-width:0"><span class="text-[15px] font-extrabold leading-tight truncate">${esc(shown)}</span>${x.isCash ? '' : channelTagHtml(x)}${_isWarn(x) ? '<span class="ch-tag warn">警戒</span>' : ''}</div>
+                        <div class="text-[11px] font-semibold text-gray-400 truncate">${sub}</div>
                     </div>
                 </div>
             </td>`;
         const click = x.isCash ? `data-cash="1" data-ai="${x.ai}"` : `data-ai="${x.ai}" data-hi="${x.hi}"`;
-        if (x.isCash) {
-            return `<tr ${click}>${nameCell}
-                <td class="text-gray-300">—</td>
-                <td class="num blur-amt font-bold"><div>${baseSym()}${fmt0(toBase(x.mvCNY))}</div><div class="text-[10px] text-gray-400 mt-0.5">—</div></td>
-                <td class="num font-bold"><div>—</div><div class="text-[10px] text-gray-400 mt-0.5">${weight.toFixed(1)}%</div></td></tr>`;
-        }
+        if (x.isCash) return `<tr ${click}>${nameCell}<td class="hold-sh"><span class="hold-sh-n" style="font-size:18px">${baseSym()}${fmt0(toBase(x.mvCNY))}</span></td></tr>`;   //现金行显示具体金额(现金不是价格)
         if (x.noQuote) {
-            return `<tr ${click} data-holding-key="${x.ai}-${x.hi}">
-                ${nameCell}
-                <td class="num"><div class="text-[11px] font-bold text-amber-500">无行情</div><div class="text-[10px] text-gray-400 mt-0.5">点击处理</div></td>
-                <td class="num font-bold"><div>${fmt0(x.shares)}</div><div class="text-[10px] text-gray-400 mt-0.5">—</div></td>
-                <td class="text-gray-300">—</td></tr>`;
+            return `<tr ${click} data-holding-key="${x.ai}-${x.hi}">${nameCell}
+                <td class="hold-sh"><div class="text-[11px] font-bold text-amber-500">无行情</div><div class="text-[10px] text-gray-400 mt-0.5">点击处理</div></td></tr>`;
         }
-        const cp = x.changePercent || 0;
-        const pnl = x.pnlCNY || 0;
-        const costCNY = x.mvCNY - pnl;
-        const pnlPct = costCNY > 0 ? pnl / costCNY * 100 : 0;
-        const cpCls = cp >= 0 ? 'up' : 'down';
-        const pnlCls = pnl >= 0 ? 'up' : 'down';
-        // 防情绪: 列表层不放市值/盈亏金额(进详情看), 只留结构信息(股数/占比/成本)+百分比
-        const sharesTxt = x.shares > 0 ? fmt0(x.shares) : '—';                       // 整数股数,小数四舍五入
-        const costTxt = x.costPrice > 0 ? `${sym} ${Number(x.costPrice).toFixed(2)}` : '—'; // 成本不加千分位,省宽度防贴边
+        const sh = Number(x.shares) || 0;
+        const sharesTxt = sh <= 0 ? '—' : sh >= 1000 ? fmt0(sh) : (Math.abs(sh - Math.round(sh)) < 0.05 ? String(Math.round(sh)) : sh.toFixed(1));
         return `<tr ${click} data-holding-key="${x.ai}-${x.hi}">
             ${nameCell}
-            <td class="num font-bold"><div data-live-field="price">${sym} ${fmt2(x.price)}</div><div data-live-field="change" class="text-[10px] mt-0.5 ${cpCls}">${cp >= 0 ? '▲' : '▼'}${Math.abs(cp).toFixed(2)}%</div></td>
-            <td class="num font-bold"><div>${sharesTxt}</div><div data-live-field="weight" class="text-[10px] text-gray-400 mt-0.5">${weight.toFixed(1)}%</div></td>
-            <td class="num font-bold"><div>${costTxt}</div><div data-live-field="pnlPct" class="text-[10px] mt-0.5 ${pnlCls}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%</div></td>
+            <td class="hold-sh"><span class="hold-sh-n">${sharesTxt}</span>${sh > 0 ? `<span class="hold-sh-u"> ${shareUnit(x)}</span>` : ''}</td>
         </tr>`;
     }
 }
@@ -1263,6 +1388,7 @@ let _pnlPeekTimer = null;
 function peekPnl(){
     const wrap = document.getElementById('pnlWrap');
     if (!wrap.classList.contains('hidden')) { unpeekPnl(); return; }   // 展开中再点 → 立即收起
+    if (masked) return;   //眼睛没打开时点了不展开, 曲线也不切(曲线是清晰的, 切了等于露出盈亏走势)
     wrap.classList.remove('hidden');
     equityMode = 'pnl'; try { renderEquity(); } catch (e) {}   // 曲线同步切成累计盈亏
     clearTimeout(_pnlPeekTimer);
@@ -1275,23 +1401,133 @@ function unpeekPnl(){
 }
 function switchPage(p){
     unpeekPnl();   // 离开/回到首页都回到收起态
-    document.getElementById('pageAssets').classList.toggle('active', p === 'assets');
     document.getElementById('pageHoldings').classList.toggle('active', p === 'holdings');
     document.getElementById('pageDiscipline').classList.toggle('active', p === 'discipline');
-    document.getElementById('tabAssetsBtn').classList.toggle('on', p === 'assets');
     document.getElementById('tabHoldingsBtn').classList.toggle('on', p === 'holdings');
     document.getElementById('tabDisciplineBtn').classList.toggle('on', p === 'discipline');
-    document.getElementById('tabbar').dataset.active = { assets: 0, holdings: 1, discipline: 2 }[p];
-    document.getElementById('addHoldingFab').classList.toggle('show', p === 'holdings');
+    document.getElementById('tabbar').dataset.active = { discipline: 0, holdings: 1 }[p];
     // 离开 display:none 后图表尺寸需重算
     requestAnimationFrame(() => {
-        try { if (p === 'assets' && equityChart) equityChart.resize(); } catch (e) {}
         try { if (p === 'holdings' && pieChart) pieChart.resize(); } catch (e) {}
     });
 }
+// 筛选菜单(标题下拉): 只列有持仓的地区; 选中后写回隐藏的 filterSel 并重绘
+function updateFilterTitle(){
+    const v = document.getElementById('filterSel').value, tag = document.getElementById('filterTag');
+    if (tag) tag.textContent = v === 'all' ? '' : `· ${v}`;   // 箭头是单独的图标(垂直居中), 这里只写地区
+}
+function closeFilterMenu(){ document.getElementById('filterMenu').classList.add('hidden'); }
+// 右上角「⋯」: 新增持仓 / 外观(跟随系统 → 浅色 → 深色, 点了不关菜单, 可以连着点)
+function themeModeLabel(){ return themeMode === 'auto' ? '跟随系统' : themeMode === 'light' ? '浅色' : '深色'; }
+function closeMoreMenu(){ document.getElementById('moreMenu').classList.add('hidden'); }
+// ===== 首页设置: 首页最上面放什么、三句话、还要显示哪些块; 存在 plan.json 的 home 和 creed 里 =====
+function homeSetChanged(){ document.getElementById('hsSymWrap').style.display = document.getElementById('hsHero').value === 'shares' ? '' : 'none'; }
+function openHomeSet(){
+    requireAuth(() => {
+        const home = (planDoc && planDoc.home) || {}, lines = (planDoc && planDoc.creed && planDoc.creed.lines) || [];
+        const blocks = Array.isArray(home.blocks) ? home.blocks : [];
+        const items = flatten(state || { accounts: [] }).filter(x => !x.isCash).sort((x, y) => y.mvCNY - x.mvCNY);
+        const cur = (Array.isArray(home.symbols) && home.symbols[0]) || (items[0] && items[0].symbol) || '';
+        document.getElementById('hsSym').innerHTML = items.map(x => `<option value="${esc(x.symbol)}"${x.symbol === cur ? ' selected' : ''}>${esc(shortHoldingName(x.name || x.symbol))} · ${esc(x.symbol)}</option>`).join('');
+        document.getElementById('hsHero').value = ['auto', 'shares', 'total', 'none'].includes(home.hero) ? home.hero : 'auto';
+        document.getElementById('hsCaption').value = home.caption || '';
+        ['hsL1', 'hsL2', 'hsL3'].forEach((id, i) => { document.getElementById(id).value = lines[i] || ''; });
+        document.getElementById('hsDca').checked = blocks.includes('dca');
+        document.getElementById('hsStruct').checked = blocks.includes('structure');
+        document.getElementById('hsTargets').checked = blocks.includes('targets');
+        homeSetChanged();
+        document.getElementById('homeModal').classList.add('show');
+    });
+}
+function closeHomeSet(){ document.getElementById('homeModal').classList.remove('show'); }
+async function saveHomeSet(){
+    const hero = document.getElementById('hsHero').value, sym = document.getElementById('hsSym').value;
+    const home = {
+        hero, symbols: hero === 'shares' && sym ? [sym] : [],
+        caption: document.getElementById('hsCaption').value.trim(),
+        blocks: [['hsDca', 'dca'], ['hsStruct', 'structure'], ['hsTargets', 'targets']].filter(([id]) => document.getElementById(id).checked).map(([, k]) => k),
+    };
+    const creed = ['hsL1', 'hsL2', 'hsL3'].map(id => document.getElementById(id).value.trim()).filter(Boolean);
+    const res = await fetch('/api/plan/home', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Auth-Token': authToken }, body: JSON.stringify({ home, creed }) });
+    if (res.status === 401) { authExpired(); closeHomeSet(); return; }
+    if (!res.ok) { alert((await res.text().catch(() => '')) || '保存失败'); return; }
+    try { planDoc = await (await authedFetch('/plan.json?t=' + Date.now(), { cache: 'no-store' })).json(); } catch (e) {}
+    closeHomeSet();
+    render();
+    renderDisciplineM();
+}
+function toggleMoreMenu(e){
+    if (e) e.stopPropagation();
+    closeFilterMenu();
+    const menu = document.getElementById('moreMenu');
+    if (!menu.classList.contains('hidden')) { closeMoreMenu(); return; }
+    const ai = !document.getElementById('aiBtn').classList.contains('hidden');
+    menu.innerHTML = `<div data-a="add">新增持仓</div><div data-a="advice">本月该买什么</div><div data-a="score">纪律成绩单</div><div data-a="year">年度回顾</div>`
+        + (ai ? `<div data-a="ai">AI 顾问</div>` : '')
+        + `<div data-a="home">首页设置</div><div data-a="theme">外观<span id="moreThemeLab">${themeModeLabel()}</span></div>`;
+    menu.classList.remove('hidden');
+}
+document.addEventListener('click', e => {
+    const menu = document.getElementById('moreMenu'); if (!menu || menu.classList.contains('hidden')) return;
+    const item = e.target.closest('#moreMenu div[data-a]');
+    if (item && item.dataset.a === 'theme') { toggleTheme(true); document.getElementById('moreThemeLab').textContent = themeModeLabel(); return; }
+    closeMoreMenu();
+    const act = item && ({ add: showAdd, advice: openAdviceM, score: openScorecardM, year: openYearM, ai: () => CalmAI.open(), home: openHomeSet })[item.dataset.a];
+    if (act) act();
+});
+function toggleFilterMenu(e){
+    if (e) e.stopPropagation();
+    closeMoreMenu();
+    const menu = document.getElementById('filterMenu');
+    if (!menu.classList.contains('hidden')) { closeFilterMenu(); return; }
+    const cur = document.getElementById('filterSel').value;
+    const have = new Set((_lastAll || []).filter(x => !x.isCash).map(x => x.region));
+    const opts = ['all'].concat(REGION_ORDER.filter(r => have.has(r) && r !== '其他'));
+    if (cur !== 'all' && !opts.includes(cur)) opts.push(cur);
+    menu.innerHTML = opts.map(o => `<div class="${o === cur ? 'on' : ''}" data-v="${esc(o)}">${o === 'all' ? '全部' : esc(o)}</div>`).join('');
+    menu.classList.remove('hidden');
+}
+document.addEventListener('click', e => {
+    const menu = document.getElementById('filterMenu'); if (!menu || menu.classList.contains('hidden')) return;
+    const item = e.target.closest('#filterMenu div[data-v]');
+    if (item) { document.getElementById('filterSel').value = item.dataset.v; updateFilterTitle(); render(); }
+    closeFilterMenu();
+});
+// 总额与走势面板: 持仓页标题栏左边的走势图标打开; 关闭时恢复隐藏金额
+function openMoney(){
+    document.getElementById('moneyModal').classList.add('show');
+    document.getElementById('pageAssets').classList.add('active');
+    render();
+    requestAnimationFrame(() => { try { renderEquity(); if (equityChart) equityChart.resize(); } catch (e) {} });
+}
+function closeMoney(){
+    document.getElementById('moneyModal').classList.remove('show');
+    document.getElementById('pageAssets').classList.remove('active');
+    unpeekPnl();   // 眼睛打开后保持到切后台/重开(否则持仓详情里的价格永远看不到)
+}
+// 眼睛长按: 隐藏状态下要按住 EYE_HOLD_MS 才显示; 显示状态下轻点立即隐藏
+const EYE_HOLD_MS = 2000;
+(function bindEyeHold(){
+    const btn = document.getElementById('eyeBtn'); if (!btn) return;
+    let timer = null, fired = false;
+    const cancel = () => { clearTimeout(timer); timer = null; btn.classList.remove('holding'); };
+    btn.addEventListener('pointerdown', e => {
+        e.preventDefault(); fired = false;
+        if (!masked) return;                       // 已显示: 交给 pointerup 立即隐藏
+        btn.classList.add('holding');
+        timer = setTimeout(() => { fired = true; cancel(); toggleMask(); }, EYE_HOLD_MS);
+    });
+    btn.addEventListener('pointerup', () => {
+        if (!masked && !fired) { toggleMask(); return; }
+        if (timer) { cancel(); themeHint('按住 2 秒显示'); }
+    });
+    btn.addEventListener('pointerleave', cancel);
+    btn.addEventListener('pointercancel', cancel);
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+})();
 function toggleMask(){
     masked = !masked;
-    localStorage.setItem('mMask', masked ? '1' : '0');
+    if (masked) unpeekPnl();   // 关眼睛时把盈亏和盈亏曲线一起收回
     document.body.classList.toggle('masked', masked);
 }
 
@@ -1367,28 +1603,49 @@ function showHoldingDetail(ai, hi){
     const totalCNY = all.reduce((s, x) => s + x.mvCNY, 0);
     const marketValueCNY = flatHolding?.mvCNY ?? marketValue * mul;
     const weight = totalCNY > 0 ? marketValueCNY / totalCNY * 100 : 0;
-    document.getElementById('detailName').textContent = h.name || h.symbol;
-    document.getElementById('detailSymbol').textContent = `${h.symbol || ''} · ${acc.name || ''}`;
+    const info = COMPANY_INFO[String(h.symbol || '').toUpperCase()] || [];
+    document.getElementById('detailName').textContent = shortHoldingName(h.name || h.symbol);
+    document.getElementById('detailSymbol').textContent = `${h.symbol || ''} · ${info[2] || acc.name || ''}`;
+    // 你拥有 N 股 + 占比 · 状态
+    const sh = Number(h.shares) || 0;
+    document.getElementById('detailShares').textContent = sh >= 1000 ? fmt0(sh) : (Math.abs(sh - Math.round(sh)) < 0.05 ? String(Math.round(sh)) : sh.toFixed(1));
+    document.getElementById('detailUnit').textContent = ' ' + shareUnit({ market: h.market, symbol: h.symbol });
+    const rule = ruleOf(h.symbol), tgt = rule ? Number(rule.targetShares) || 0 : 0;
+    const chR = flatHolding ? channelStateOf(flatHolding) : null;
+    const st = tgt > 0 ? (sh > tgt + 0.5 ? `目标 ${tgt} 股` : sh >= tgt - 0.5 ? '已买够' : `还差 ${Math.round(tgt - sh)} 股`) : (chR && chR.st === 'open' ? '可加' : '');
+    document.getElementById('detailStatus').textContent = `占 ${weight.toFixed(1)}%${st ? ' · ' + st : ''}`;
+    // 上次种下
+    const lb = lastBuyOfHolding(h), lbEl = document.getElementById('detailLastBuy');
+    if (lb) { document.getElementById('detailLastBuyTxt').textContent = `${Number(lb.day.slice(5, 7))} 月 ${Number(lb.day.slice(8, 10))} 日，种下 ${lb.shares >= 1000 ? fmt0(lb.shares) : String(Math.round(lb.shares * 10) / 10).replace(/\.0$/, '')} ${shareUnit({ market: h.market, symbol: h.symbol })}。`; lbEl.style.display = 'flex'; }
+    else lbEl.style.display = 'none';
+    // 价格与成本(只在眼睛打开时出现)
     document.getElementById('detailPrice').textContent = `${sym} ${fmt2(price)}`;
     const dayEl = document.getElementById('detailDay');
     dayEl.textContent = `${dayPct >= 0 ? '+' : ''}${dayPct.toFixed(2)}%`;
-    dayEl.className = `num text-[16px] font-black mt-1 ${dayPct >= 0 ? 'up' : 'down'}`;
-    document.getElementById('detailMarketValue').textContent = `${baseSym()}${fmt0(toBase(marketValueCNY))} · ${weight.toFixed(1)}%`;
+    dayEl.className = dayPct >= 0 ? 'up' : 'down';
+    document.getElementById('detailMarketValue').textContent = `${baseSym()}${fmt0(toBase(marketValueCNY))}`;
     const pnlEl = document.getElementById('detailPnl');
-    pnlEl.textContent = `${pnl >= 0 ? '+' : '-'}${baseSym()}${fmt0(toBase(Math.abs(pnl * mul)))} · ${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%`;
-    pnlEl.className = `num text-[16px] font-black mt-1 blur-amt ${pnl >= 0 ? 'up' : 'down'}`;
-    document.getElementById('detailShares').textContent = fmtQty(h.shares || 0);
+    pnlEl.textContent = `${pnl >= 0 ? '+' : '-'}${baseSym()}${fmt0(toBase(Math.abs(pnl * mul)))} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`;
+    pnlEl.className = `num font-bold ${pnl >= 0 ? 'up' : 'down'}`;
     document.getElementById('detailUnitCost').textContent = `${sym} ${fmt2(h.costPrice || 0)}`;
     document.getElementById('detailTotalCost').textContent = `${baseSym()}${fmt0(toBase(costValue * mul))}`;
     document.getElementById('detailFundBtn').classList.toggle('hidden', h.market !== 'fund');
-    // 通道签原因行: 哪扇闸门开/关的一眼看见
-    const chEl = document.getElementById('detailChannel');
-    const chR = flatHolding ? channelStateOf(flatHolding) : null;
-    if (chR) { chEl.innerHTML = `<span class="ch-tag ${chR.st}">${chR.label}</span><span class="text-gray-400">${esc(chR.why)}</span>`; chEl.style.display = 'flex'; }
-    else { chEl.innerHTML = ''; chEl.style.display = 'none'; }
     document.getElementById('holdingDetailModal').classList.add('show');
 }
 function closeHoldingDetail(){ document.getElementById('holdingDetailModal').classList.remove('show'); detailTarget = null; }
+// 某只持仓最近一次买入的日期和当天买入数量(sync 记录取股数增量, buy 记录直接算); 没买过返回 null
+function lastBuyOfHolding(h){
+    const tx = (h && Array.isArray(h.transactions) ? h.transactions : []).filter(t => t && t.date).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+    let prev = null, last = null; const byDay = {};
+    tx.forEach(t => {
+        const n = Number(t.shares) || 0; let d = 0;
+        if (t.type === 'sync') { if (prev !== null) d = n - prev; prev = n; }
+        else if (t.type === 'buy') { d = n; prev = (prev === null ? 0 : prev) + n; }
+        else if (t.type === 'sell') { prev = (prev === null ? 0 : prev) - n; }
+        if (d > 1e-6) { last = String(t.date).slice(0, 10); byDay[last] = (byDay[last] || 0) + d; }
+    });
+    return last ? { day: last, shares: byDay[last] } : null;
+}
 function detailOpenEdit(){
     if (!detailTarget) return;
     const t = detailTarget;
@@ -1483,7 +1740,7 @@ async function saveRule(sym, rule, reason){
 document.getElementById('addRuleBox').innerHTML = ruleBoxHtml('add');
 document.getElementById('editRuleBox').innerHTML = ruleBoxHtml('edit');
 
-// ---- 规则表单: 目标股数参考 + 修改理由(2026-10-30) ----
+// ---- 规则表单: 目标股数参考 + 修改理由 ----
 // 参考股数 = 总资产 × 占比 ÷ 每股人民币价, 只提示不自动填; 添加持仓时目标股数默认跟随本次买入股数(手动改过就不再跟随)
 function updateRuleHint(p){
     const el = document.getElementById(p + 'RuleHint');
@@ -1840,12 +2097,12 @@ function applyTheme(t){
 }
 function applyThemeMode(){ theme = resolvedTheme(); applyTheme(theme); }
 // 手动切换循环: 跟随系统 → 浅色 → 深色 → 跟随系统
-function toggleTheme(){
+function toggleTheme(quiet){
     themeMode = themeMode === 'auto' ? 'light' : themeMode === 'light' ? 'dark' : 'auto';
     localStorage.setItem('mThemeMode', themeMode);
     localStorage.removeItem('mTheme'); // 清理旧键
     applyThemeMode();
-    themeHint(themeMode === 'auto' ? '🌗 跟随系统' : themeMode === 'light' ? '☀️ 浅色' : '🌙 深色');
+    if (!quiet) themeHint(themeMode === 'auto' ? '🌗 跟随系统' : themeMode === 'light' ? '☀️ 浅色' : '🌙 深色');
 }
 // 极简瞬时提示(无依赖),让三态切换有反馈
 let _themeHintT = null;
@@ -1868,59 +2125,28 @@ if (window.matchMedia){
     const onSys = () => { if (themeMode === 'auto') applyThemeMode(); };
     if (mq.addEventListener) mq.addEventListener('change', onSys); else if (mq.addListener) mq.addListener(onSys);
 }
-let zenStarRaf = null;
+const ZEN_BG = '#15130f';
+// 冷静页信条与航向页同源: plan.json creed.threeLines 最后一句竖排大字, 倒数第二句小字; 读不到用默认
+function updateZenCreed(){
+    try {
+        const lines = (typeof planDoc !== 'undefined' && planDoc && planDoc.creed && Array.isArray(planDoc.creed.lines)) ? planDoc.creed.lines.filter(Boolean) : [];
+        if (!lines.length) return;
+        document.getElementById('zenCreedMain').textContent = lines[lines.length - 1];
+        const sub = document.getElementById('zenCreedSub');
+        sub.textContent = lines.length > 1 ? lines[lines.length - 2] : '';
+    } catch (e) {}
+}
 function enterZen(){
+    updateZenCreed();
     document.getElementById('zenOverlay').classList.add('show');
-    setThemeColor('#050508');
+    setThemeColor(ZEN_BG);
     localStorage.setItem('zenMode', '1');
-    updateZenTelemetry();
-    requestAnimationFrame(startZenStarfield); // 下一帧再起星空动画，不阻塞首帧显示
     updateZenDays();
 }
 function exitZen(){
     document.getElementById('zenOverlay').classList.remove('show');
     setThemeColor(theme === 'dark' ? '#0c1118' : '#f2f2f7');
     localStorage.setItem('zenMode', '0');
-    stopZenStarfield();
-}
-// 星空(适配全屏 + DPR)
-function startZenStarfield(){
-    const canvas = document.getElementById('zenStarfield');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const W = canvas.width = Math.floor(window.innerWidth * dpr);
-    const H = canvas.height = Math.floor(window.innerHeight * dpr);
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    const N = 90;
-    const stars = Array.from({ length: N }, () => ({
-        x: Math.random() * W, y: Math.random() * H, z: Math.random(),
-        r: (0.3 + Math.random() * 1.2) * dpr, a: 0.15 + Math.random() * 0.5,
-        twinkle: Math.random() * Math.PI * 2, drift: (Math.random() - 0.5) * 0.05 * dpr,
-    }));
-    function frame(){
-        ctx.clearRect(0, 0, W, H);
-        stars.forEach(s => {
-            s.twinkle += 0.018; s.x += s.drift;
-            if (s.x < 0) s.x = W; else if (s.x > W) s.x = 0;
-            const t = (Math.sin(s.twinkle) + 1) / 2;
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.r * (0.7 + t * 0.6), 0, Math.PI * 2);
-            ctx.fillStyle = 'hsla(' + Math.floor(220 + s.z * 60) + ',70%,82%,' + (s.a * (0.5 + t * 0.5)) + ')';
-            ctx.fill();
-        });
-        zenStarRaf = requestAnimationFrame(frame);
-    }
-    frame();
-}
-function stopZenStarfield(){ if (zenStarRaf) { cancelAnimationFrame(zenStarRaf); zenStarRaf = null; } }
-function updateZenTelemetry(){
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 0);
-    const doy = Math.floor((now - start) / 86400000);
-    const el = document.getElementById('zenStardate');
-    if (el) el.textContent = now.getFullYear() + '.' + String(doy).padStart(3, '0');
 }
 async function updateZenDays(){
     const el = document.getElementById('zenHoldingDays');
@@ -2156,7 +2382,6 @@ setInterval(loadIbSync, 5 * 60 * 1000);
 
 function renderDisciplineM(){
     if (!planDoc || !state) return;
-    if (planDoc.motto) document.getElementById('dcQuote').textContent = planDoc.motto;   // 页尾一句话, 可在 plan.json 的 motto 自定义
     const rate = rateOf(state);
     const mul = c => mulOf(c, rate);
 
@@ -2187,7 +2412,7 @@ function renderDisciplineM(){
     const now = new Date(), ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     // 每只: 金额 = Σ Δ(成本价×股数) 或 buy 记录 股数×价; 只取本月
     const monthBuyOf = (h) => {
-        let usd = 0, shares = 0, last = null;
+        let usd = 0, shares = 0, last = null, lastSell = null; const byDay = {}, sellByDay = {};
         const tx = (h && Array.isArray(h.transactions) ? h.transactions : []).filter(t => t && t.date).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
         let prevShares = null, prevCostVal = null;
         tx.forEach(t => {
@@ -2198,19 +2423,20 @@ function renderDisciplineM(){
                     const dSh = sh - prevShares;
                     if (dSh > 0) {
                         const dAmt = (prevCostVal !== null && costVal > prevCostVal) ? costVal - prevCostVal : dSh * px;
-                        last = String(t.date).slice(0, 10);
+                        last = String(t.date).slice(0, 10); byDay[last] = (byDay[last] || 0) + dSh;
                         if (String(t.date).slice(0, 7) === ym) { usd += dAmt; shares += dSh; }
-                    }
+                    } else if (dSh < 0) { lastSell = String(t.date).slice(0, 10); sellByDay[lastSell] = (sellByDay[lastSell] || 0) - dSh; }
                 }
                 prevShares = sh; prevCostVal = costVal;
             } else if (t.type === 'buy' || t.type === 'sell') {
                 const dSh = t.type === 'buy' ? sh : -sh;
-                if (dSh > 0) { last = String(t.date).slice(0, 10); if (String(t.date).slice(0, 7) === ym) { usd += dSh * px; shares += dSh; } }
+                if (dSh > 0) { last = String(t.date).slice(0, 10); byDay[last] = (byDay[last] || 0) + dSh; if (String(t.date).slice(0, 7) === ym) { usd += dSh * px; shares += dSh; } }
+                else if (dSh < 0) { lastSell = String(t.date).slice(0, 10); sellByDay[lastSell] = (sellByDay[lastSell] || 0) - dSh; }
                 prevShares = (prevShares === null ? 0 : prevShares) + dSh;
                 prevCostVal = (prevCostVal === null ? 0 : prevCostVal) + dSh * px;
             }
         });
-        return { usd, shares, last };
+        return { usd, shares, last, lastShares: last ? byDay[last] : 0, lastSell, lastSellShares: lastSell ? sellByDay[lastSell] : 0 };
     };
     let monthCNY = 0, lastBuy = null, lastSym = '';
     const idxParts = [];
@@ -2238,7 +2464,7 @@ function renderDisciplineM(){
     const doneTag = done ? `<span class="ch-tag open" style="font-size:11px;padding:4px 7px">✓ 完成</span>` : `<span class="text-[12px] font-bold text-gray-400 num">差 ¥${fmt0(Math.max(0, passCNY - monthCNY))} 达标</span>`;
     const hasIndexPlan = !!(planDoc.channels && planDoc.channels.indexPlan && Array.isArray(planDoc.channels.indexPlan.symbols) && planDoc.channels.indexPlan.symbols.length);
     // 没写定投计划就不显示定投这一块(在途申购照常显示)
-    document.getElementById('mDcExec').innerHTML = !hasIndexPlan ? dcaRows : `
+    const dcaBlock = !hasIndexPlan ? dcaRows : `
         <div style="padding:2px 4px 0">
             <div class="text-[12px] font-bold text-gray-400">${now.getMonth() + 1} 月定投 · ${idxSyms.join('/')}</div>
             <div class="flex items-end" style="gap:10px;margin-top:2px;flex-wrap:wrap">
@@ -2364,39 +2590,64 @@ function renderDisciplineM(){
             <span class="flex items-center" style="gap:10px"><span class="dc-dot" style="background:#f59e0b"></span><b>个股</b></span>
             <span class="num">${stockCapSet ? `<b class="${stOk ? '' : 'dc-warn'}">${stPct.toFixed(1)}%</b> <span class="text-gray-400">/ ≤${stockCap}</span> ${mark(stOk)}` : `<b>${stPct.toFixed(1)}%</b>`}</span>
         </div>`;
-    document.getElementById('mDcAlloc').innerHTML =
-        (planDoc._empty ? `<div class="text-[12px] text-gray-400 px-1 mb-2">还没写规则：所有持仓默认「封仓」，结构只显示占比。可以在总览页的「开始使用」里写规则。</div>` : '') +
-        `<div class="dc-sec">结构</div>` + structRows + offRow + spRow +
-        (tgtRows ? `<div class="dc-sec">个股目标</div>` + tgtRows : '');
-
-    // ③ 纪律记分卡(指数桶 vs 个股桶, 涨绿跌红)
-    const bk = { idx: { c: 0, m: 0, r: 0, n: 0 }, stk: { c: 0, m: 0, r: 0, n: 0 } };
-    (state.accounts || []).forEach(acc => {
-        const m = mul(acc.currency || 'CNY');
-        (acc.holdings || []).forEach(h => {
-            const cv = (h.costValue || 0) * m, mv = (h.marketValue || 0) * m;
-            if (cv <= 0 && mv <= 0) return;
-            const b = classifyAllocationBucket(h);
-            let key = null;
-            if (b === '纳指指数类' || b === '标普') key = 'idx';
-            else if ((h.market === 'nasdaq' || h.market === 'nyse') && !isOtherHolding(h)) key = 'stk';
-            if (!key) return;
-            bk[key].c += cv; bk[key].m += mv; bk[key].r += (h.realizedPnl || 0) * m; bk[key].n++;
+    // ===== 首页: 主角(可配置) + 三句话; 定投进度 / 结构 / 个股目标在「首页设置」里勾了才显示 =====
+    const home = planDoc.home || {};
+    const blocks = Array.isArray(home.blocks) ? home.blocks : [];
+    const items = flatten(state).filter(x => !x.isCash && (Number(x.shares) || 0) > 0);
+    let mode = home.hero || 'auto';
+    let heroSyms = Array.isArray(home.symbols) ? home.symbols.filter(Boolean) : [];
+    if (mode === 'auto') {   // 自动: 写了定投计划就是定投名单里持有最多的那一只, 否则是占比最大的一只(不同标的的数量不相加)
+        mode = 'shares';
+        const bySize = items.slice().sort((x, y) => y.mvCNY - x.mvCNY);
+        const idxHeld = hasIndexPlan ? bySize.filter(x => idxSyms.includes(x.symbol)) : [];
+        heroSyms = idxHeld.length ? [idxHeld[0].symbol] : bySize.length ? [bySize[0].symbol] : [];
+    }
+    const shFmt = v => v >= 1000 ? fmt0(v) : String(v >= 0.05 ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100).replace(/\.0$/, '');
+    let heroHtml = '';
+    const held = items.filter(x => heroSyms.includes(x.symbol));
+    if (mode === 'shares' && held.length) {
+        const ownSh = held.reduce((sum, x) => sum + (Number(x.shares) || 0), 0), unit = shareUnit(held[0]);
+        // 最近一次变动: 买入 → 印章「种」; 卖出 → 「收」。日期 11 个月以内写「M 月 D 日」, 更久写「YYYY 年 M 月」
+        let lastDay = null, lastSh = 0, sellDay = null, sellSh = 0;
+        held.forEach(x => {
+            const raw = state.accounts[x.ai] && state.accounts[x.ai].holdings[x.hi]; if (!raw) return;
+            const r = monthBuyOf(raw);
+            if (r.last && (!lastDay || r.last > lastDay)) { lastDay = r.last; lastSh = r.lastShares; } else if (r.last && r.last === lastDay) lastSh += r.lastShares;
+            if (r.lastSell && (!sellDay || r.lastSell > sellDay)) { sellDay = r.lastSell; sellSh = r.lastSellShares; } else if (r.lastSell && r.lastSell === sellDay) sellSh += r.lastSellShares;
         });
-    });
-    const pctOf = b => b.c > 0 ? (b.m - b.c + b.r) / b.c * 100 : 0;
-    // 成绩: 指数桶 vs 个股桶 两张小卡, ▲▼ 与持仓页同; 领先判词放组标题
-    const iP = pctOf(bk.idx), sP = pctOf(bk.stk);
-    const iPnl = bk.idx.m - bk.idx.c + bk.idx.r, sPnl = bk.stk.m - bk.stk.c + bk.stk.r;
-    const lead = iP - sP;
-    const verdict = lead >= 0 ? `指数桶领先 ${lead.toFixed(1)}pp` : `个股桶领先 ${(-lead).toFixed(1)}pp`;
-    const fmtPnl = v => `${v >= 0 ? '+' : '-'}¥${fmt0(Math.abs(v))}`;
-    const arrow = v => `${v >= 0 ? '▲' : '▼'}${Math.abs(v).toFixed(1)}%`;
-    document.getElementById('mDcScore').innerHTML = `
-        <div class="dc-sec">成绩 <span class="font-semibold">· ${verdict}</span></div>
-        <div class="flex" style="gap:8px">
-            <div class="dc-row bg-white" style="flex:1;margin:0"><div class="text-[11px] text-gray-400">指数部分</div><div class="num ${iP >= 0 ? 'up' : 'down'}" style="font-size:20px;font-weight:900">${arrow(iP)}</div><div class="text-[11px] text-gray-400 num blur-amt">${fmtPnl(iPnl)}</div></div>
-            <div class="dc-row bg-white" style="flex:1;margin:0"><div class="text-[11px] text-gray-400">个股部分</div><div class="num ${sP >= 0 ? 'up' : 'down'}" style="font-size:20px;font-weight:900">${arrow(sP)}</div><div class="text-[11px] text-gray-400 num blur-amt">${fmtPnl(sPnl)}</div></div>
+        const harvest = !!sellDay && (!lastDay || sellDay > lastDay);
+        const evDay = harvest ? sellDay : lastDay, evSh = harvest ? sellSh : lastSh;
+        const dayTxt = d => { const y = Number(d.slice(0, 4)), m = Number(d.slice(5, 7)); const months = (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m); return months >= 11 ? `${y} 年 ${m} 月` : `${m} 月 ${Number(d.slice(8, 10))} 日`; };
+        const caption = home.caption || (held.length === 1 ? shortHoldingName(held[0].name || held[0].symbol) : heroSyms.join(' / '));
+        heroHtml = `
+        <div class="dc-u2">
+            <div class="dc-u2-lab" style="letter-spacing:3px">你拥有</div>
+            <div style="margin-top:10px;white-space:nowrap"><span class="dc-u2-n">${shFmt(ownSh)}</span><span class="dc-u2-u"> ${unit}</span></div>
+            <div class="dc-u2-lab" style="letter-spacing:2px;margin-top:10px">${esc(caption)}</div>
+            ${evDay ? `<div class="dc-u2-last"><span class="dc-u2-seal">${harvest ? '收' : '种'}</span><span>${dayTxt(evDay)}，${harvest ? '收下' : '种下'} ${shFmt(evSh)} ${unit}。</span></div>` : ''}
+        </div>`;
+    } else if (mode === 'total') {
+        const totalAll = flatten(state).reduce((sum, x) => sum + x.mvCNY, 0);
+        heroHtml = `
+        <div class="dc-u2">
+            <div class="dc-u2-lab" style="letter-spacing:3px">总资产</div>
+            <div style="margin-top:12px;white-space:nowrap"><span class="dc-u2-n blur-amt" style="font-size:46px">${baseSym()} ${fmt0(toBase(totalAll))}</span></div>
+            ${home.caption ? `<div class="dc-u2-lab" style="letter-spacing:2px;margin-top:12px">${esc(home.caption)}</div>` : ''}
+        </div>`;
+    }
+    document.getElementById('mDcExec').innerHTML = heroHtml;
+    document.getElementById('mDcAlloc').innerHTML =
+        (planDoc._empty ? `<div class="text-[12px] text-gray-400 px-1 mb-2 text-center" style="margin-top:14px">还没写规则：所有持仓默认「封仓」。可以在上面的「开始使用」里写规则。</div>` : '') +
+        (blocks.includes('dca') ? `<div style="margin-top:18px">${dcaBlock}</div>` : '') +
+        (blocks.includes('structure') ? `<div class="dc-sec">结构</div>` + structRows : '') + offRow + spRow +
+        (blocks.includes('targets') && tgtRows ? `<div class="dc-sec">个股目标</div>` + tgtRows : '');
+    // 三句话: plan.json creed.lines, 竖排, 第一句是主句; 没写就不显示
+    const lines = ((planDoc.creed && (planDoc.creed.lines || planDoc.creed.threeLines)) || []).filter(Boolean).slice(0, 3);
+    const hero1 = lines[0], rest = lines.slice(1);
+    document.getElementById('mDcScore').innerHTML = !hero1 ? '' : `
+        <div class="dc-creed-v">
+            <div class="dc-cv-main">${esc(hero1)}</div>
+            ${rest.map((t, i) => `<div class="dc-cv-col" style="padding-top:${46 * (i + 1)}px"><div class="dc-cv-sub">${esc(t)}</div>${i === rest.length - 1 ? '<span class="dc-cv-seal">守</span>' : ''}</div>`).join('')}
         </div>`;
 }
 
@@ -2444,7 +2695,6 @@ function renderSkeleton(){
     document.getElementById('totalBig').innerHTML = '<span class="skel skel-text" style="width:180px"></span>';
     document.getElementById('pnlAll').innerHTML = '<span class="skel skel-text" style="width:90px"></span>';
     document.getElementById('pnlDay').innerHTML = '<span class="skel skel-text" style="width:90px"></span>';
-    document.getElementById('regionList').innerHTML = '<div class="skel skel-card"></div>'.repeat(3);
     document.getElementById('pieLegend').innerHTML = '<div class="skel skel-card" style="height:120px"></div>';
     const hl = document.getElementById('holdingList');
     if (hl) hl.innerHTML = '<div class="card hold-card" style="padding:8px 12px">' + Array.from({ length: 5 }, () => '<div class="py-2"><div class="skel skel-row"></div></div>').join('') + '</div>';
@@ -2517,8 +2767,20 @@ function connectNow(){
 }
 
 // 回前台: 系统多半已杀掉 WS,主动拉一次 + 立刻重连;切后台顺手存快照
+// 切后台自动进冷静页: 切走那一刻就进(回来不会先闪数字, 多任务预览也是冷静页);
+// 1 分钟内回来自动退出, 像没发生过; 超过 1 分钟停在冷静页。本来就在冷静页的不动。
+const AUTO_ZEN_GRACE_MS = 60 * 1000;
+let _autoZenAt = 0;   // 自动进入的时间; 0 = 不是自动进入的
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') { saveSnap(true); return; }
+    const zenOn = document.getElementById('zenOverlay').classList.contains('show');
+    if (document.visibilityState !== 'visible') {
+        if (!masked) { masked = true; document.body.classList.add('masked'); }   // 离开就恢复隐藏
+        unpeekPnl();
+        if (!zenOn) { enterZen(); _autoZenAt = Date.now(); }
+        saveSnap(true); return;
+    }
+    if (_autoZenAt && zenOn && Date.now() - _autoZenAt < AUTO_ZEN_GRACE_MS) exitZen();
+    _autoZenAt = 0;
     manualRefresh();
     if (!wsLive()) connectNow();
 });

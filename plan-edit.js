@@ -150,7 +150,43 @@ function applyIndexPlan(plan, x, { reason = "", source = "page" } = {}) {
   return { changed: true };
 }
 
+// 首页设置(安静版): 首页最上面放什么 + 还要显示哪些块。写进 plan.home; 三句话仍然是 plan.creed.lines(可以清空)。
+const HOME_HEROES = ["auto", "shares", "total", "none"];
+const HOME_BLOCKS = ["dca", "structure", "targets"];
+function validateHome(x) {
+  if (!x || typeof x !== "object" || Array.isArray(x)) return { error: "首页设置格式错误" };
+  const hero = x.hero === undefined ? "auto" : String(x.hero);
+  if (!HOME_HEROES.includes(hero)) return { error: "首页显示方式只能是 auto / shares / total / none" };
+  const symbols = (Array.isArray(x.symbols) ? x.symbols : []).map((v) => String(v || "").trim().toUpperCase()).filter(Boolean).slice(0, 5);
+  if (symbols.some((v) => !SYMBOL_RE.test(v))) return { error: "代码格式不对" };
+  if (hero === "shares" && !symbols.length) return { error: "请选一只持仓" };
+  const caption = String(x.caption || "").trim().slice(0, 40);
+  const blocks = [...new Set((Array.isArray(x.blocks) ? x.blocks : []).map(String).filter((b) => HOME_BLOCKS.includes(b)))];
+  return { home: { hero, symbols: hero === "shares" ? symbols : [], caption, blocks } };
+}
+function applyHome(plan, rawHome, creedLines, { reason = "", source = "page" } = {}) {
+  const v = validateHome(rawHome);
+  if (v.error) return { error: v.error };
+  let changed = false;
+  if (JSON.stringify(plan.home || null) !== JSON.stringify(v.home)) {
+    plan.home = v.home;
+    pushChangelog(plan, `首页设置：显示 ${v.home.hero}${v.home.symbols.length ? " " + v.home.symbols.join("/") : ""}${v.home.blocks.length ? "，另显示 " + v.home.blocks.join("/") : ""}`, reason, source);
+    changed = true;
+  }
+  if (creedLines !== undefined) {
+    const lines = (Array.isArray(creedLines) ? creedLines : []).map((t) => String(t || "").trim()).filter(Boolean).slice(0, 8).map((t) => t.slice(0, 80));
+    const before = ((plan.creed && plan.creed.lines) || []).join(" / ");
+    if (before !== lines.join(" / ")) {
+      plan.creed = { ...(plan.creed || {}), lines };
+      pushChangelog(plan, `信条：${before || "未写"} → ${lines.join(" / ") || "清空"}`, reason, source);
+      changed = true;
+    }
+  }
+  return { changed, home: v.home };
+}
+
 module.exports = {
+  validateHome, applyHome, HOME_HEROES, HOME_BLOCKS,
   validateRule, describeRule, applySymbolRule, validateAllocation, applyAllocation, currentAllocation, ALLOC_FIELDS, SYMBOL_RE,
   validateCreed, applyCreed, applyMotto, validateIndexPlan, applyIndexPlan, describeIndexPlan,
 };

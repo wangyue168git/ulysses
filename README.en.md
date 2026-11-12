@@ -14,28 +14,51 @@
 >
 > Investing is the same. You want to chase rallies, run from crashes, and doubt yourself when a friend's stock doubles. This dashboard is the mast: **write down the rule before you buy; from then on every holding carries a small tag that says "add" or "hold off" according to your own rules.**
 
+## Two editions
+
+This repository ships two editions. The idea is the same (write the rule first, then follow it); the interface leans two different ways:
+
+| | **Quiet** (default, branch `quiet`) | **Classic** (branch [`main`](https://github.com/wangyue168git/ulysses/tree/main)) |
+|---|---|---|
+| For | People who want to look at prices less and hold for the long run | People who want prices, P&L and analysis in one place |
+| Home | Only "you own N shares" and three lines you wrote yourself — no prices, no amounts | Total assets, P&L, equity curve, regional split |
+| Prices and amounts | Hidden by default; every visit requires a 2-second press on the eye to reveal | Shown; can be masked manually |
+| Holdings list | Share counts and weights only | Price, daily change, cost, return |
+| Desktop | Read-only: a piece of calligraphy and a holdings table | Look-through, attribution, journal; can add and edit |
+| Rules, add/hold-off tags, scorecard, AI advisor, broker sync | Yes | Yes |
+
+If unsure, take the quiet edition: the less often you open the dashboard and the fewer prices you see, the easier it is to stick to the plan. For the classic edition, clone with `-b main`. Both editions read the same data files, so you can switch at any time.
+
+Everything below describes the quiet edition. The interface is in Chinese.
+
 <p>
-  <img src="docs/screenshots/m-home.png" width="250" alt="Overview">
-  <img src="docs/screenshots/m-holdings.png" width="250" alt="Holdings">
-  <img src="docs/screenshots/m-discipline.png" width="250" alt="Discipline">
+  <img src="docs/screenshots/q-home.png" width="250" alt="Home">
+  <img src="docs/screenshots/q-holdings.png" width="250" alt="Holdings">
+  <img src="docs/screenshots/q-calm.png" width="250" alt="Calm page">
 </p>
 
 ## What it does
 
-- **"Add / hold off" tags driven by your own rules**: always add, weight-based (add below one line, stop at another, stop once a target share count is reached), or never add. Rules can be set right on the page, and every change is logged.
-- **Discipline page**: did this month's index purchase happen, is the index/stock split on target, have you bought enough of each stock — all on one screen.
-- **What to buy this month**: enter this month's budget and get a split across the holdings your rules allow: index plan first, then the structure targets, then stocks that are open for adding.
-- **Discipline scorecard / year in review**: a grade for how well you kept your own rules, and a story-style look back at the year; save it as an image to share — it contains grades and ratios only, never amounts. (The UI is in Chinese.)
-- **Designed against anxiety**: profit and loss are hidden on the home screen by default; tap to peek and they hide again after a few seconds. Colour is used only where attention is needed.
+- **A home screen about direction, not price**: "you own N shares" on top, three lines of your own below. Choose what goes on top — the share count of one holding, total assets (blurred), or nothing — and optionally add this month's index purchase, structure, or stock targets.
+- **Prices and amounts are out of sight by default**: hidden on every visit; reveal them from the money sheet with a 2-second press. P&L needs one more tap and hides again after a few seconds. Coming back from the background shows a calm page first.
+- **"Add" tags driven by your own rules**: always add, weight-based (add below one line, stop at another, stop once a target share count is reached), or never add. Rules are set on the page and every change is logged. Only "add" is shown in the list; everything else stays quiet.
+- **Your companies**: individual stocks get their own group showing the company name, how many shares you own and whether you have bought enough — not tickers and prices.
+- **What to buy this month / discipline scorecard / year in review**: tucked into the "⋯" menu on the holdings page. The scorecard grades how well you kept your own rules and contains ratios only, no amounts.
+- **Read-only desktop**: the home calligraphy on the left, holdings on the right. All edits happen on the phone, so you don't rebalance just because you are sitting at a computer.
 - **All accounts in one place**: China A-shares, mutual funds, Hong Kong and US stocks, and crypto, converted to one currency.
-- **Desktop analysis**: exposure breakdown, return attribution, an investment journal, and the equity curve.
-- **AI advisor (optional)**: one-tap portfolio check-up, Q&A, an interview that drafts rules for beginners, and importing holdings from a broker screenshot. It can only *propose* changes — you confirm each one — and it has no ability to trade. By default only percentages are sent, never amounts.
-- **Broker sync (optional)**: Interactive Brokers and Longbridge built in; any other broker via CSV import or a small custom adapter.
-- **Your data stays yours**: one Node.js process and a few JSON files. No database, no third-party accounts.
+- **AI advisor (optional)**: one-tap check-up, questions, drafting rules for beginners, importing holdings from a screenshot. It can only suggest; every change needs your confirmation and it cannot place orders. By default it is sent ratios, not amounts.
+- **Broker sync (optional)**: Interactive Brokers and Longbridge built in; import CSV from others or write a small adapter.
+- **Your data stays with you**: one Node.js process and a few JSON files — no database, no third-party account.
 
-<img src="docs/screenshots/d-overview.png" width="820" alt="Desktop">
+<p>
+  <img src="docs/screenshots/q-detail.png" width="250" alt="Holding detail">
+  <img src="docs/screenshots/q-money.png" width="250" alt="Money sheet">
+  <img src="docs/screenshots/q-settings.png" width="250" alt="Home settings">
+</p>
 
-> Screenshots show fictional demo data. The UI is currently in Chinese.
+<img src="docs/screenshots/q-desktop.png" width="820" alt="Desktop">
+
+> All screenshots show fictional demo data.
 
 ## Quick start
 
@@ -44,7 +67,8 @@
 With Docker:
 
 ```bash
-git clone https://github.com/wangyue168git/ulysses.git
+git clone https://github.com/wangyue168git/ulysses.git          # quiet edition (default)
+# git clone -b main https://github.com/wangyue168git/ulysses.git  # classic edition
 cd ulysses
 cp .env.example .env        # edit as needed, e.g. set APP_PASSWORD
 docker compose up -d
@@ -74,6 +98,7 @@ The detailed guides are in Chinese for now.
 
 | Topic | Guide |
 |---|---|
+| The quiet edition: pages, home settings, differences from classic | [Quiet edition](docs/quiet.md) (Chinese) |
 | What each page does; setting rules in the UI | [docs/features.md](docs/features.md) |
 | Writing the rules file `plan.json` | [docs/rules.md](docs/rules.md) |
 | AI advisor: features, configuration, privacy | [docs/ai.md](docs/ai.md) |

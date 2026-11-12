@@ -11,7 +11,7 @@ const { canCommitGeneration, evaluateQuoteHealth, quoteKey, serializeFreshness }
 const { createIbSync, shanghaiDay, parseExtras: parseIbExtras } = require("./ib-sync");
 const { buildBrokerSyncs } = require("./brokers");
 const { planImport, cleanName } = require("./csv-import");
-const { applySymbolRule, applyAllocation, applyCreed, applyMotto, applyIndexPlan } = require("./plan-edit");
+const { applySymbolRule, applyAllocation, applyCreed, applyMotto, applyIndexPlan, applyHome } = require("./plan-edit");
 const { aiConfigFromEnv } = require("./ai/providers");
 const { runAgent } = require("./ai/agent");
 const { createToolset } = require("./ai/tools");
@@ -1706,6 +1706,26 @@ const server = http.createServer((req, res) => {
       if (!savePlan(plan)) { res.writeHead(500, noStoreJsonHeaders); res.end(JSON.stringify({ ok: false, error: "规则保存失败" })); return; }
       res.writeHead(200, noStoreJsonHeaders);
       res.end(JSON.stringify({ ok: true, symbol: r.symbol, rule: r.rule }));
+    });
+    return;
+  }
+
+  // 首页设置(手机端「⋯ → 首页设置」): { home: { hero, symbols, caption, blocks }, creed: [三句话] }
+  if (urlObj.pathname === "/api/plan/home" && req.method === "PUT") {
+    if (!checkAuth(req)) { res.writeHead(401); res.end("Unauthorized"); return; }
+    let body = "";
+    req.on("data", (c) => { body += c; if (body.length > 8192) req.destroy(); });
+    req.on("end", () => {
+      let args;
+      try { args = JSON.parse(body || "{}"); } catch { res.writeHead(400); res.end("请求格式错误"); return; }
+      if (!args || typeof args !== "object" || Array.isArray(args)) { res.writeHead(400); res.end("请求格式错误"); return; }
+      const plan = JSON.parse(JSON.stringify(loadPlan() || {}));
+      delete plan._empty;
+      const r = applyHome(plan, args.home, args.creed, { source: "page" });
+      if (r.error) { res.writeHead(400); res.end(r.error); return; }
+      if (r.changed && !savePlan(plan)) { res.writeHead(500, noStoreJsonHeaders); res.end(JSON.stringify({ ok: false, error: "保存失败" })); return; }
+      res.writeHead(200, noStoreJsonHeaders);
+      res.end(JSON.stringify({ ok: true, home: r.home }));
     });
     return;
   }
