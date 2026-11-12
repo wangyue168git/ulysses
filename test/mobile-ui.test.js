@@ -59,3 +59,20 @@ test("i18n: both pages load the translation layer, the server serves it, and the
   assert.match(i18n, /if \(lang !== "en"\) return;/);   // 中文界面不做任何替换
   for (const k of ["你拥有", "新增持仓", "首页设置", "可加", "修改持仓"]) assert.ok(i18n.includes(`"${k}"`), k);
 });
+
+test("extension: read-only, no hard-coded host, no background work, shares the classifier", () => {
+  const ext = path.join(__dirname, "..", "extension");
+  const manifest = JSON.parse(fs.readFileSync(path.join(ext, "manifest.json"), "utf8"));
+  const popup = fs.readFileSync(path.join(ext, "popup.js"), "utf8");
+  const html = fs.readFileSync(path.join(ext, "popup.html"), "utf8");
+  assert.equal(manifest.manifest_version, 3);
+  assert.deepEqual(manifest.permissions, ["storage"]);
+  assert.equal(manifest.host_permissions, undefined);            // 装的时候不要任何网站权限
+  assert.ok(Array.isArray(manifest.optional_host_permissions));   // 填了地址后才申请那一个
+  assert.equal(manifest.background, undefined);                   // 不在后台运行
+  assert.ok(!/\d+\.\d+\.\d+\.\d+/.test(popup + html), "no hard-coded address");
+  assert.ok(!/method:\s*'(PUT|DELETE)'/.test(popup));
+  assert.deepEqual(popup.match(/method: 'POST'/g), ["method: 'POST'"]);   // 只有登录
+  assert.ok(!/\son[a-z]+="/.test(html), "no inline handlers (extension CSP)");
+  assert.equal(fs.readFileSync(path.join(ext, "classify.js"), "utf8"), fs.readFileSync(path.join(__dirname, "..", "classify.js"), "utf8"), "extension/classify.js must match classify.js");
+});

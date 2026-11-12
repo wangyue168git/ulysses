@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Ulysses · 尤利西斯",
+  "version": "1.0.0",
+  "description": "舰桥读数：你拥有多少股、你的公司、指数占比。只读，金额默认上锁。需要一个已部署的 Ulysses 看板。",
+  "permissions": ["storage"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Ulysses",
+    "default_icon": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  },
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+}

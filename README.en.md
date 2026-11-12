@@ -45,6 +45,7 @@ Everything below describes the quiet edition. The interface comes in Chinese and
 - **Your companies**: individual stocks get their own group showing the company name, how many shares you own and whether you have bought enough — not tickers and prices.
 - **What to buy this month / discipline scorecard / year in review**: tucked into the "⋯" menu on the holdings page. The scorecard grades how well you kept your own rules and contains ratios only, no amounts.
 - **Read-only desktop**: the home calligraphy on the left, holdings on the right. All edits happen on the phone, so you don't rebalance just because you are sitting at a computer.
+- **Browser extension (optional)**: a small toolbar popup in a sci-fi "bridge readout" style — share counts only, amounts locked, read-only. See [Browser extension](docs/extension.md) (Chinese).
 - **All accounts in one place**: China A-shares, mutual funds, Hong Kong and US stocks, and crypto, converted to one currency.
 - **AI advisor (optional)**: one-tap check-up, questions, drafting rules for beginners, importing holdings from a screenshot. It can only suggest; every change needs your confirmation and it cannot place orders. By default it is sent ratios, not amounts.
 - **Broker sync (optional)**: Interactive Brokers and Longbridge built in; import CSV from others or write a small adapter.
@@ -140,6 +141,10 @@ Tap the holding → "Edit" → change the buying rule and write one line of reas
 
 The desktop page is read-only: the home calligraphy on the left, the donut and holdings on the right; the chart icon opens the money panel and clicking a row opens its detail. All edits happen on the phone.
 
+### Browser extension
+
+For a quick glance on a computer, load the extension from this repository: `chrome://extensions` → Developer mode → Load unpacked → choose the `extension` folder, then enter your dashboard address and password. It is read-only and shows share counts and weights; amounts unlock after a 2-second press. Its labels follow your browser language. Details: [Browser extension](docs/extension.md) (Chinese).
+
 ### Backups
 
 Everything lives in a few JSON files in the data directory (`data/` by default). Copy that directory to back up. See [Security and data](docs/security.md).
@@ -151,6 +156,7 @@ The detailed guides are in Chinese for now.
 | Topic | Guide |
 |---|---|
 | The quiet edition: pages, home settings, differences from classic | [Quiet edition](docs/quiet.md) (Chinese) |
+| The browser extension: install, what it shows, permissions | [Browser extension](docs/extension.md) (Chinese) |
 | What each page does; setting rules in the UI | [docs/features.md](docs/features.md) |
 | Writing the rules file `plan.json` | [docs/rules.md](docs/rules.md) |
 | AI advisor: features, configuration, privacy | [docs/ai.md](docs/ai.md) |

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Ulysses</title>
+<style>
+  /* 舰桥读数(E1): 深蓝底、青色细线、等宽字。内容和看板守同一条线: 先看股数, 金额默认上锁(按住 2 秒解锁) */
+  :root { --c: #5eead4; --cd: rgba(94,234,212,.35); --amber: #fbbf24; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 380px; height: 560px; overflow: hidden; }
+  body { position: relative; color: #e2e8f0; background: radial-gradient(120% 80% at 50% 0%, #0b2030, #030a12 70%);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  #grid { position: absolute; inset: 0; opacity: .12; background-image: linear-gradient(var(--cd) 1px, transparent 1px), linear-gradient(90deg, var(--cd) 1px, transparent 1px); background-size: 38px 38px; }
+  #scan { position: absolute; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, rgba(94,234,212,.07), transparent); animation: scan 6s linear infinite; }
+  @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .25; } }
+  header { position: relative; display: flex; justify-content: space-between; padding: 14px 16px 0; font-size: 10px; letter-spacing: 2px; color: var(--c); }
+  #link.on { animation: blink 2s infinite; } #link.off { color: #f87171; }
+  #ringWrap { position: relative; height: 190px; display: flex; align-items: center; justify-content: center; margin-top: 6px; }
+  #ringWrap svg { position: absolute; }
+  #dial { animation: spin 60s linear infinite; }
+  #own { text-align: center; }
+  #own .lab { font-size: 9px; letter-spacing: 3px; color: var(--c); }
+  #ownN { font-size: 40px; font-weight: 700; line-height: 1.1; color: #fff; text-shadow: 0 0 14px rgba(94,234,212,.6); }
+  #ownSub { font-size: 10px; letter-spacing: 2px; color: #94a3b8; }
+  #idxBox { position: absolute; right: 22px; top: 20px; font-size: 9px; color: var(--c); text-align: right; line-height: 1.5; }
+  #idxBox b { font-size: 15px; color: #fff; }
+  #lists { position: relative; padding: 0 16px; }
+  .sec { font-size: 9px; letter-spacing: 2px; margin-top: 13px; } .sec:first-child { margin-top: 0; }
+  .row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+  .row .nm { width: 92px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .track { flex: 1; height: 5px; background: rgba(148,163,184,.14); position: relative; }
+  .row .track i { position: absolute; left: 0; top: 0; bottom: 0; }
+  .row .sh { width: 78px; text-align: right; font-size: 11px; white-space: nowrap; }
+  footer { position: absolute; left: 16px; right: 16px; bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; }
+  #creed { font-size: 10.5px; line-height: 1.75; color: #94a3b8; } #creed span { color: var(--c); }
+  #lock { border: 1px solid var(--cd); padding: 7px 10px; text-align: right; font-size: 9px; letter-spacing: 1px; color: var(--c); cursor: pointer; user-select: none; position: relative; overflow: hidden; min-width: 118px; }
+  #lock b { font-size: 14px; color: #fff; } #lock .hint { color: #64748b; }
+  #lock i { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--c); }
+  #lock.holding i { width: 100%; transition: width 2s linear; }
+  #gear { cursor: pointer; margin-left: 8px; color: #64748b; } #gear:hover { color: var(--c); }
+  /* 设置页: 看板地址和密码(只在第一次或登录失效时出现) */
+  #setup { position: absolute; inset: 0; z-index: 5; display: none; flex-direction: column; justify-content: center; padding: 0 30px; background: radial-gradient(120% 80% at 50% 0%, #0b2030, #030a12 70%); }
+  #setup.show { display: flex; }
+  #setup h2 { font-size: 13px; letter-spacing: 3px; color: var(--c); margin: 0 0 6px; font-weight: 600; }
+  #setup p { font-size: 11.5px; line-height: 1.7; color: #94a3b8; margin: 0 0 16px; }
+  #setup label { font-size: 10px; letter-spacing: 1px; color: #94a3b8; margin: 10px 0 5px; display: block; }
+  #setup input { width: 100%; background: rgba(148,163,184,.08); border: 1px solid var(--cd); color: #fff; padding: 9px 10px; font-size: 13px; outline: none; }
+  #setup input:focus { border-color: var(--c); }
+  #setup button { margin-top: 18px; width: 100%; padding: 10px; background: transparent; border: 1px solid var(--c); color: var(--c); font-size: 12px; letter-spacing: 3px; cursor: pointer; }
+  #setup button:hover { background: rgba(94,234,212,.1); }
+  #setupErr { color: #f87171; font-size: 11px; margin-top: 10px; min-height: 16px; }
+  #msg { position: absolute; left: 0; right: 0; top: 250px; text-align: center; font-size: 11px; letter-spacing: 2px; color: #64748b; }
+</style>
+</head>
+<body>
+<div id="grid"></div><div id="scan"></div>
+<header class="mono"><span id="hdTitle">ULYSSES // 航向</span><span><span id="link" class="on">● LINK</span> <span id="gear" title="设置">⚙</span></span></header>
+<div id="ringWrap">
+  <svg id="dial" width="176" height="176" viewBox="0 0 176 176"><circle cx="88" cy="88" r="82" fill="none" stroke="rgba(94,234,212,.35)" stroke-width="1" stroke-dasharray="2 7"/></svg>
+  <svg width="176" height="176" viewBox="0 0 176 176"><circle cx="88" cy="88" r="70" fill="none" stroke="rgba(148,163,184,.16)" stroke-width="5"/><circle id="arc" cx="88" cy="88" r="70" fill="none" stroke="#5eead4" stroke-width="5" stroke-dasharray="0 440" transform="rotate(-90 88 88)" style="filter:drop-shadow(0 0 5px #5eead4);transition:stroke-dasharray .8s ease"/></svg>
+  <div id="own"><div id="ownLab" class="lab mono">YOU OWN</div><div id="ownN" class="mono">--</div><div id="ownSub" class="mono">SHARES</div></div>
+  <div id="idxBox" class="mono"><span id="idxLab">INDEX</span><br><b id="idxPct">--</b></div>
+</div>
+<div id="lists"></div>
+<div id="msg" class="mono"></div>
+<div id="setup">
+  <h2 class="mono" id="suTitle">CONNECT</h2>
+  <p id="suHint">填你自己部署的 Ulysses 看板地址和登录密码。插件只读取数据，不会修改任何东西。</p>
+  <label id="suUrlLab" for="suUrl">看板地址</label>
+  <input id="suUrl" class="mono" placeholder="http://your-server:3457" spellcheck="false">
+  <label id="suPwdLab" for="suPwd">密码（看板开了免登录只读就留空）</label>
+  <input id="suPwd" type="password">
+  <button id="suGo" class="mono">CONNECT</button>
+  <div id="setupErr"></div>
+</div>
+<footer>
+  <div id="creed" class="mono"></div>
+  <div id="lock" class="mono" ><span id="lockTxt"></span><i></i></div>
+</footer>
+<script src="classify.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
