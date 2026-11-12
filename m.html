@@ -15,6 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><!-- iOS26: default 模式下 env(safe-area-inset-top) 恒为0, translucent 才如实上报 -->
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="/tailwind.css?v=13">
+<script src="/i18n.js?v=1"></script>
 <script src="/chart.umd.min.js"></script>
 <script src="/classify.js?v=19"></script>
 <script src="/ai-panel.js?v=7"></script>
@@ -1464,13 +1465,14 @@ function toggleMoreMenu(e){
     const ai = !document.getElementById('aiBtn').classList.contains('hidden');
     menu.innerHTML = `<div data-a="add">新增持仓</div><div data-a="advice">本月该买什么</div><div data-a="score">纪律成绩单</div><div data-a="year">年度回顾</div>`
         + (ai ? `<div data-a="ai">AI 顾问</div>` : '')
-        + `<div data-a="home">首页设置</div><div data-a="theme">外观<span id="moreThemeLab">${themeModeLabel()}</span></div>`;
+        + `<div data-a="home">首页设置</div><div data-a="theme">外观<span id="moreThemeLab">${themeModeLabel()}</span></div><div data-a="lang">语言<span data-noi18n>${window.UlyssesI18n ? UlyssesI18n.label() : '中文'}</span></div>`;
     menu.classList.remove('hidden');
 }
 document.addEventListener('click', e => {
     const menu = document.getElementById('moreMenu'); if (!menu || menu.classList.contains('hidden')) return;
     const item = e.target.closest('#moreMenu div[data-a]');
     if (item && item.dataset.a === 'theme') { toggleTheme(true); document.getElementById('moreThemeLab').textContent = themeModeLabel(); return; }
+    if (item && item.dataset.a === 'lang' && window.UlyssesI18n) { UlyssesI18n.toggle(); return; }
     closeMoreMenu();
     const act = item && ({ add: showAdd, advice: openAdviceM, score: openScorecardM, year: openYearM, ai: () => CalmAI.open(), home: openHomeSet })[item.dataset.a];
     if (act) act();

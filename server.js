@@ -1367,6 +1367,7 @@ const PUBLIC_STATIC_FILES = {
   "/csv-import.js": ["csv-import.js", "application/javascript; charset=utf-8"],
   "/ai-panel.js": ["ai-panel.js", "application/javascript; charset=utf-8"],
   "/onboard.js": ["onboard.js", "application/javascript; charset=utf-8"],
+  "/i18n.js": ["i18n.js", "application/javascript; charset=utf-8"],
   "/report.js": ["report.js", "application/javascript; charset=utf-8"],
   "/share.js": ["share.js", "application/javascript; charset=utf-8"],
   "/card.html": ["card.html", "text/html; charset=utf-8"],

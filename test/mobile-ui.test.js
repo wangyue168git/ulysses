@@ -46,3 +46,16 @@ test("desktop: read-only — no write requests, no edit entry points", () => {
   for (const gone of ["showAddHolding", "submitEdit", "deleteHolding", "showEditCash"]) assert.ok(!desktop.includes(gone), gone);
   assert.match(desktop, /const home = planDoc\.home \|\| \{\};/);
 });
+
+test("i18n: both pages load the translation layer, the server serves it, and the menus offer a language switch", () => {
+  const server = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
+  const i18n = fs.readFileSync(path.join(__dirname, "..", "i18n.js"), "utf8");
+  for (const page of [mobile, desktop]) {
+    assert.match(page, /<script src="\/i18n\.js\?v=\d+"><\/script>/);
+    assert.ok(page.includes('data-a="lang"'));
+    assert.ok(page.includes("UlyssesI18n.toggle()"));
+  }
+  assert.ok(server.includes('"/i18n.js"'));
+  assert.match(i18n, /if \(lang !== "en"\) return;/);   // 中文界面不做任何替换
+  for (const k of ["你拥有", "新增持仓", "首页设置", "可加", "修改持仓"]) assert.ok(i18n.includes(`"${k}"`), k);
+});

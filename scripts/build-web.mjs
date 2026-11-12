@@ -32,7 +32,7 @@ await build({
   },
 });
 
-const STATIC = ["tailwind.css", "chart.umd.min.js", "classify.js", "csv-import.js", "ai-panel.js", "onboard.js", "report.js", "share.js", "card.html",
+const STATIC = ["tailwind.css", "chart.umd.min.js", "classify.js", "csv-import.js", "ai-panel.js", "onboard.js", "i18n.js", "report.js", "share.js", "card.html",
   "favicon.ico", "apple-touch-icon.png", "icon-192.png", "icon-512.png"];
 STATIC.forEach((f) => fs.copyFileSync(path.join(root, f), path.join(out, f)));
 

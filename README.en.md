@@ -29,7 +29,7 @@ This repository ships two editions. The idea is the same (write the rule first, 
 
 If unsure, take the quiet edition: the less often you open the dashboard and the fewer prices you see, the easier it is to stick to the plan. For the classic edition, clone with `-b main`. Both editions read the same data files, so you can switch at any time.
 
-Everything below describes the quiet edition. The interface is in Chinese.
+Everything below describes the quiet edition. The interface comes in Chinese and English: it follows your browser language and can be switched from the "⋯" menu. Holding names and your own text are shown as you entered them; AI advisor answers, the year in review and share images are Chinese only for now.
 
 <p>
   <img src="docs/screenshots/q-home.png" width="250" alt="Home">

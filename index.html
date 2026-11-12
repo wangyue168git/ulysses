@@ -13,6 +13,7 @@
     <!-- 本地化静态资源(原 cdn.tailwindcss.com 运行时 + jsdelivr chart.js): 摆脱 CDN 抖动,与 m.html 共用同一份 -->
     <!-- tailwind.css 重建: npx tailwindcss@3 -c tailwind.config.js -i tailwind.input.css -o tailwind.css --minify -->
     <link rel="stylesheet" href="/tailwind.css?v=13"><!-- 改 tailwind.css 时三处版本号同步: index.html / m.html / sw.js -->
+    <script src="/i18n.js?v=1"></script>
     <script src="/chart.umd.min.js"></script>
     <style>.dc-peek{opacity:0;transition:opacity .3s}.dc-peek-on .dc-peek{opacity:1}</style>
     <script src="/classify.js?v=19"></script><!-- 改 classify.js 时三处版本号同步: index.html / m.html / sw.js -->
@@ -968,13 +969,14 @@ function w1ToggleMore(e){
     if (e) e.stopPropagation();
     const m = document.getElementById('w1More');
     if (!m.classList.contains('hidden')) { w1CloseMore(); return; }
-    m.innerHTML = `<div data-a="tank">持仓鱼缸</div><hr><div data-a="theme">外观<span id="w1ThemeLab">${w1ThemeLabel()}</span></div>`;
+    m.innerHTML = `<div data-a="tank">持仓鱼缸</div><hr><div data-a="theme">外观<span id="w1ThemeLab">${w1ThemeLabel()}</span></div><div data-a="lang">语言<span data-noi18n>${window.UlyssesI18n ? UlyssesI18n.label() : '中文'}</span></div>`;
     m.classList.remove('hidden');
 }
 document.addEventListener('click', e => {
     const m = document.getElementById('w1More'); if (!m || m.classList.contains('hidden')) return;
     const item = e.target.closest('#w1More div[data-a]');
     if (item && item.dataset.a === 'theme') { cycleTheme(); document.getElementById('w1ThemeLab').textContent = w1ThemeLabel(); return; }
+    if (item && item.dataset.a === 'lang' && window.UlyssesI18n) { UlyssesI18n.toggle(); return; }
     w1CloseMore();
     if (!item) return;
     ({ tank: enterTankFull })[item.dataset.a]();
