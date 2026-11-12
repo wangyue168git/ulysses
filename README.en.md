@@ -92,6 +92,58 @@ Or deploy to a cloud platform in one click:
 
 For Fly.io, Railway and other options, see the [deployment guide](docs/deploy.md).
 
+## How to use it
+
+### First visit
+
+1. **Sign in**: open `http://<your-server>:3457` and enter the password. Phones land on the mobile page, computers on the desktop page.
+2. **Follow the "Get started" card** on the home screen (it disappears once done):
+   - **Enter your holdings**: holdings page, "⋯ → Add holding"; pick a type (US stock / China A-share / fund / crypto), then symbol, quantity and cost. Skip this if you use broker sync — see [Broker sync](docs/brokers/).
+   - **Write a buying rule**: the add/edit sheet has a "buying rule" section. No rule means "hold off"; with a rule, the holding is tagged "add" when your rule says so.
+   - **Add to your home screen**: use your phone browser's "Add to Home Screen" and open it like an app.
+3. **Set up the home screen**: "⋯ → Home settings" — choose which holding's share count goes on top and write your own three lines.
+
+### Writing rules
+
+Each holding takes one kind of rule:
+
+| Rule | Tagged "add" when | Good for |
+|---|---|---|
+| Always add | Always | An index fund you plan to keep buying |
+| By weight | Its weight is below your line; it stops at your cap, or once a target share count is reached | A stock you want to build to a set size and then leave alone |
+| Never add | Never | Holdings you do not intend to add to |
+
+Holdings without a rule are treated as "hold off". To buy something not on the list, write the rule first, then buy. Every rule change is logged. Monthly index plans, structure targets and ETF premium rules are covered in [Rules](docs/rules.md).
+
+### Day to day
+
+- **The home screen is enough**: how many shares you own, when you last planted, and your three lines.
+- **Structure**: the holdings page. The donut's centre shows the index share; below, holdings are grouped into your companies / index / other, with share counts and weights. "Add" marks what your rules currently allow.
+- **One holding**: tap its row. You see shares, weight, whether you have bought enough, and the last purchase date.
+- **Amounts**: the chart icon at the top left of the holdings page. Amounts are blurred; press and hold the eye for 2 seconds to reveal them. Only then do prices and cost appear in a holding's detail.
+- **Profit and loss**: with the eye open, tap the "updated at" line under the amount. It hides again after a few seconds.
+- **Coming back**: after more than a minute away you first see a calm page; tap to enter. Amounts are hidden again.
+
+### When you have money to invest
+
+"⋯ → What to buy this month": enter the amount and it splits it by your rules — index plan first, then structure, then stocks tagged "add". It only does arithmetic on your rules; it does not predict anything. Update the quantities afterwards (or wait for broker sync).
+
+### When you want to change a rule
+
+Tap the holding → "Edit" → change the buying rule and write one line of reason. Consider waiting a few days: the urge to change a rule is strongest exactly when the rule is doing its job.
+
+### Looking back
+
+"⋯ → Discipline scorecard" grades how well you kept your own rules; "Year in review" walks you through the year each December. Both can be saved as images containing ratios only.
+
+### On a computer
+
+The desktop page is read-only: the home calligraphy on the left, the donut and holdings on the right; the chart icon opens the money panel and clicking a row opens its detail. All edits happen on the phone.
+
+### Backups
+
+Everything lives in a few JSON files in the data directory (`data/` by default). Copy that directory to back up. See [Security and data](docs/security.md).
+
 ## Documentation
 
 The detailed guides are in Chinese for now.
